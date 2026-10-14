@@ -24,6 +24,7 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
  const [dpi,setDpi]=useState(150);
  const [labels,setLabels]=useState(true);
  const [numbers,setNumbers]=useState(false);
+ const [fitMode,setFitMode]=useState<"contain"|"cover">("contain");
  const [title,setTitle]=useState("");
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -57,10 +58,10 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
      const x=pad+(slot%safeColumns)*(cellW+gapPx),y=top+Math.floor(slot/safeColumns)*(cellH+gapPx);
      const response=await fetch(image.url);const blob=await response.blob();const bitmap=await createImageBitmap(blob);
      const labelHeight=(labels||numbers)?Math.max(18,Math.round(5*scale)):0;
-     const boxH=Math.max(1,cellH-labelHeight),ratio=Math.min(cellW/bitmap.width,boxH/bitmap.height);
+     const boxH=Math.max(1,cellH-labelHeight),ratio=fitMode==="cover"?Math.max(cellW/bitmap.width,boxH/bitmap.height):Math.min(cellW/bitmap.width,boxH/bitmap.height);
      const drawW=bitmap.width*ratio,drawH=bitmap.height*ratio;
      context.fillStyle="#f1f0f6";context.fillRect(x,y,cellW,boxH);
-     context.drawImage(bitmap,x+(cellW-drawW)/2,y+(boxH-drawH)/2,drawW,drawH);bitmap.close();
+     context.save();context.beginPath();context.rect(x,y,cellW,boxH);context.clip();context.drawImage(bitmap,x+(cellW-drawW)/2,y+(boxH-drawH)/2,drawW,drawH);context.restore();bitmap.close();
      if(labels||numbers){context.fillStyle="#252238";context.font=`${Math.max(10,Math.round(3.1*scale))}px sans-serif`;context.textAlign="center";const text=[numbers?String(pageIndex*perPage+slot+1):"",labels?image.name:""].filter(Boolean).join(" · ");context.fillText(text,x+cellW/2,y+cellH-Math.max(4,2*scale),Math.max(1,cellW-4));}
     }
     const pageBlob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("encode-failed")),"image/png"));
@@ -83,6 +84,7 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
     <label className="feature-field"><span>{t.rows}</span><input type="number" min="1" max="20" value={rows} onChange={e=>{setRows(Math.min(20,Math.max(1,Number(e.target.value)||1)));setPages([]);}}/></label>
     <label className="feature-field"><span>{t.gap}</span><input type="number" min="0" max="30" value={gap} onChange={e=>{setGap(Math.min(30,Math.max(0,Number(e.target.value)||0)));setPages([]);}}/></label>
     <label className="feature-field"><span>{t.margin}</span><input type="number" min="0" max="40" value={margin} onChange={e=>{setMargin(Math.min(40,Math.max(0,Number(e.target.value)||0)));setPages([]);}}/></label>
+    <label className="feature-field"><span>{t.fitMode}</span><select value={fitMode} onChange={e=>{setFitMode(e.target.value as "contain"|"cover");setPages([]);}}><option value="contain">{t.contain}</option><option value="cover">{t.cover}</option></select></label>
     <label className="feature-field"><span>{t.dpi}</span><select value={dpi} onChange={e=>{setDpi(Number(e.target.value));setPages([]);}}><option value={72}>72 DPI</option><option value={150}>150 DPI</option><option value={300}>300 DPI</option></select></label>
     <label className="feature-field feature-field-wide"><span>{t.titleLabel}</span><input value={title} maxLength={80} placeholder={t.titlePlaceholder} onChange={e=>{setTitle(e.target.value);setPages([]);}}/></label>
     <label className="feature-check"><input type="checkbox" checked={labels} onChange={e=>{setLabels(e.target.checked);setPages([]);}}/>{t.labels}</label>
