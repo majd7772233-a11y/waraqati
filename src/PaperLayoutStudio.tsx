@@ -65,7 +65,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const [fit,setFit]=useState<ImageFit>("contain");
  const [rows,setRows]=useState(3);
  const [columns,setColumns]=useState(3);
- const [repeat,setRepeat]=useState(false);
+ const [repeat,setRepeat]=useState(false);\n const [stickerSizeEnabled,setStickerSizeEnabled]=useState(false);\n const [stickerWidth,setStickerWidth]=useState(45);\n const [stickerHeight,setStickerHeight]=useState(45);
  const [customCount,setCustomCount]=useState(2);
  const [customRegions,setCustomRegions]=useState<RegionDefinition[]>([]);
  const [pageIndex,setPageIndex]=useState(1);
@@ -77,21 +77,32 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const settings:PaperSettings={size:size==="custom"?{preset:"custom",width:customWidth,height:customHeight}:{preset:size},orientation,unit,margins,gap};
  const dimensions=useMemo(()=>{try{return getPaperDimensions(settings.size,orientation,unit);}catch{return {width:210,height:297};}},[size,orientation,unit,customWidth,customHeight]);
  const customSource=useMemo(()=>customRegions.length===customCount?customRegions:defaultRegions(1,customCount,dimensions.width/unitFactor(unit),dimensions.height/unitFactor(unit),gap),[customRegions,customCount,dimensions.width,dimensions.height,unit,gap]);
+ const stickerRegions=useMemo(()=>{
+  const factor=unitFactor(unit);
+  const pageWidth=dimensions.width/factor, pageHeight=dimensions.height/factor;
+  const availableWidth=pageWidth-margins.left-margins.right, availableHeight=pageHeight-margins.top-margins.bottom;
+  const safeWidth=Math.max(.1,stickerWidth),safeHeight=Math.max(.1,stickerHeight);
+  const fitColumns=Math.max(1,Math.min(20,Math.floor((availableWidth+gap)/(safeWidth+gap))));
+  const fitRows=Math.max(1,Math.min(20,Math.floor((availableHeight+gap)/(safeHeight+gap))));
+  const totalWidth=fitColumns*safeWidth+(fitColumns-1)*gap;
+  const startX=margins.left+Math.max(0,(availableWidth-totalWidth)/2);
+  return Array.from({length:fitRows*fitColumns},(_,index)=>({id:`sticker-${index+1}`,x:startX+(index%fitColumns)*(safeWidth+gap),y:margins.top+Math.max(0,(availableHeight-(fitRows*safeHeight+(fitRows-1)*gap))/2)+Math.floor(index/fitColumns)*(safeHeight+gap),width:safeWidth,height:safeHeight}));
+ },[dimensions.width,dimensions.height,unit,margins.top,margins.right,margins.bottom,margins.left,gap,stickerWidth,stickerHeight]);
  const layout=useMemo(()=>{
   if(!selectedImages.length)return null;
   try{
    const sources=repeat&&selectedImages.length===1
-    ? Array.from({length:Math.max(1,mode==="custom"?customCount:gridRows*gridColumns)},(_,i)=>({...selectedImages[0],id:`${selectedImages[0].id}__repeat_${i+1}`}))
+    ? Array.from({length:Math.max(1,mode==="custom"?customCount:mode==="stickers"&&stickerSizeEnabled?stickerRegions.length:gridRows*gridColumns)},(_,i)=>({...selectedImages[0],id:`${selectedImages[0].id}__repeat_${i+1}`}))
     : selectedImages;
    return calculateLayout({
     settings,images:sources.map(image=>({id:image.id,width:image.width,height:image.height})),
     fit,
-    ...(mode==="custom"?{regions:customSource}:{grid:{rows:gridRows,columns:gridColumns,gap}}),
+    ...(mode==="custom"?{regions:customSource}:mode==="stickers"&&stickerSizeEnabled?{regions:stickerRegions}:{grid:{rows:gridRows,columns:gridColumns,gap}}),
    });
   }catch(cause){setError(cause instanceof Error?cause.message:String(cause));return null;}
  // gridRows/gridColumns are derived immediately below and stable primitives.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[chosen,images,mode,size,orientation,unit,customWidth,customHeight,margins.top,margins.right,margins.bottom,margins.left,gap,fit,rows,columns,repeat,customCount,customSource]);
+ },[chosen,images,mode,size,orientation,unit,customWidth,customHeight,margins.top,margins.right,margins.bottom,margins.left,gap,fit,rows,columns,repeat,customCount,customSource,stickerSizeEnabled,stickerRegions]);
 
  const activePage=layout?.pages[Math.min(pageIndex,layout.pages.length)-1]??null;
  const imageById=(id:string)=>images.find(image=>id===image.id||id.startsWith(`${image.id}__repeat_`));
@@ -107,8 +118,8 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   }
  }
  function resetTemplate(){
-  setMargins({top:8,right:8,bottom:8,left:8});setGap(4);setFit("contain");setRows(3);setColumns(3);setRepeat(false);
-  setCustomRegions([]);setPageIndex(1);setError("");
+  setMargins({top:8,right:8,bottom:8,left:8});setGap(4);setFit("contain");setRows(3);setColumns(3);setRepeat(false);setStickerSizeEnabled(false);setStickerWidth(45);setStickerHeight(45);
+  setCustomRegions([]);setStickerSizeEnabled(false);setPageIndex(1);setError("");
  }
  function toggleImage(id:string){setChosen(old=>old.includes(id)?old.filter(item=>item!==id):[...old,id]);setPageIndex(1);}
 
@@ -134,7 +145,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
       <label className="studio-field"><span>{t.fit}</span><select value={fit} onChange={e=>setFit(e.target.value as ImageFit)}><option value="contain">{t.contain}</option><option value="cover">{t.cover}</option></select></label>
       {(mode==="stickers"||mode==="custom")&&<div className="studio-two-fields"><label className="studio-field"><span>{t.rows}</span><input type="number" min="1" max="20" value={rows} onChange={e=>{setRows(clampInt(e.target.value,1,20));setPageIndex(1);}}/></label><label className="studio-field"><span>{t.columns}</span><input type="number" min="1" max="20" value={columns} onChange={e=>{setColumns(clampInt(e.target.value,1,20));setPageIndex(1);}}/></label></div>}
       {mode==="custom"&&<><label className="studio-field"><span>{t.count}</span><input type="number" min="1" max="20" value={customCount} onChange={e=>{const count=clampInt(e.target.value,1,20);setCustomCount(count);setCustomRegions([]);}}/></label><div className="studio-region-editor"><div className="studio-subheading">{t.regions}</div>{customSource.map((region,index)=><div className="studio-region-row" key={index}><strong>{t.region} {index+1}</strong>{(["x","y","width","height"] as const).map(key=><label key={key}><span>{key==="width"?t.width:key==="height"?t.height:key.toUpperCase()}</span><input type="number" min={key==="width"||key==="height"?"0.1":"0"} step="0.5" value={region[key]} onChange={e=>setCustomField(index,key,Number(e.target.value))}/></label>)}</div>)}</div></>}
-      {mode==="stickers"&&<label className="studio-check"><input type="checkbox" checked={repeat} onChange={e=>{setRepeat(e.target.checked);setPageIndex(1);}}/><span>{t.repeat}</span></label>}
+      {mode==="stickers"&&<><label className="studio-check"><input type="checkbox" checked={stickerSizeEnabled} onChange={e=>{setStickerSizeEnabled(e.target.checked);setPageIndex(1);}}/><span>{locale==="ar"?"تحديد مقاس الملصق بدل الصفوف والأعمدة":"Set sticker size instead of rows and columns"}</span></label>{stickerSizeEnabled&&<div className="studio-two-fields"><label className="studio-field"><span>{locale==="ar"?"عرض الملصق":"Sticker width"} ({unit})</span><input type="number" min="1" step="0.5" value={stickerWidth} onChange={e=>setStickerWidth(Math.max(.1,Number(e.target.value)))}/></label><label className="studio-field"><span>{locale==="ar"?"ارتفاع الملصق":"Sticker height"} ({unit})</span><input type="number" min="1" step="0.5" value={stickerHeight} onChange={e=>setStickerHeight(Math.max(.1,Number(e.target.value)))}/></label></div>}<label className="studio-check"><input type="checkbox" checked={repeat} onChange={e=>{setRepeat(e.target.checked);setPageIndex(1);}}/><span>{t.repeat}</span></label></>}
       <button type="button" className="studio-reset" onClick={resetTemplate}>{t.reset}</button>
      </div>
     </section>
