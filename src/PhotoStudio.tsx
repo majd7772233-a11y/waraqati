@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { downloadBlob } from "./imageProcessing";
 
 export interface PhotoStudioImage { id: string; name: string; url: string; width: number; height: number }
@@ -29,6 +29,8 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
  const [error,setError]=useState("");
  const [pages,setPages]=useState<RenderedPage[]>([]);
  const [previewIndex,setPreviewIndex]=useState(0);
+ const [previewUrl,setPreviewUrl]=useState("");
+ useEffect(()=>{if(!pages.length){setPreviewUrl("");return;}const url=URL.createObjectURL(pages[previewIndex].blob);setPreviewUrl(url);return()=>URL.revokeObjectURL(url);},[pages,previewIndex]);
  const selectedImages=useMemo(()=>selected.map(id=>images.find(image=>image.id===id)).filter((image):image is PhotoStudioImage=>Boolean(image)),[selected,images]);
  const dimensions=useMemo(()=>preset==="4x6"?{width:101.6,height:152.4}:preset==="5x7"?{width:127,height:177.8}:preset==="A4"?{width:210,height:297}:{width:customWidth,height:customHeight},[preset,customWidth,customHeight]);
  function toggle(id:string){setSelected(old=>old.includes(id)?old.filter(value=>value!==id):[...old,id]);setPages([]);}
@@ -88,7 +90,7 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
    </div>
    <div className="feature-actions"><button type="button" className="button button-primary" disabled={busy||!selected.length} onClick={()=>void renderSheets()}>{busy?t.render:t.generate}</button>{pages.length>0&&<button type="button" className="button button-quiet" onClick={()=>pages.forEach((page,index)=>window.setTimeout(()=>downloadBlob(page.blob,page.filename),index*180))}>{t.download}</button>}</div>
    {error&&<p className="feature-error" role="alert">{error}</p>}
-   {pages.length>0&&<><p className="feature-success" role="status">{t.generated.replace("{n}",String(pages.length))}</p><div className="feature-preview"><div className="feature-preview-bar"><span>{t.page} {previewIndex+1} / {pages.length}</span><div><button type="button" disabled={previewIndex===0} onClick={()=>setPreviewIndex(value=>value-1)}>←</button><button type="button" disabled={previewIndex===pages.length-1} onClick={()=>setPreviewIndex(value=>value+1)}>→</button></div></div><img src={URL.createObjectURL(pages[previewIndex].blob)} alt={`Contact sheet page ${previewIndex+1}`}/></div></>}
+   {pages.length>0&&<><p className="feature-success" role="status">{t.generated.replace("{n}",String(pages.length))}</p><div className="feature-preview"><div className="feature-preview-bar"><span>{t.page} {previewIndex+1} / {pages.length}</span><div><button type="button" disabled={previewIndex===0} onClick={()=>setPreviewIndex(value=>value-1)}>←</button><button type="button" disabled={previewIndex===pages.length-1} onClick={()=>setPreviewIndex(value=>value+1)}>→</button></div></div><img src={previewUrl} alt={`Contact sheet page ${previewIndex+1}`}/></div></>}
    <p className="feature-note">{t.sizeNote}</p>
   </div></div>
  </section>;
