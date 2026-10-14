@@ -116,7 +116,7 @@ export function makeOutputName(template: string, originalName: string, index: nu
   const safeBase = base.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").trim() || "image";
   const rendered = template.replace(/\{name\}/g, safeBase).replace(/\{n\}/g, String(index + 1)).replace(/\{ext\}/g, extension);
   const cleaned = rendered.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").trim().replace(/\.+$/g, "");
-  return (cleaned || safeBase) + "." + extension;
+  const finalName = cleaned || safeBase;\n  return /\\.(png|jpe?g|webp)$/i.test(finalName) ? finalName : finalName + "." + extension;
 }
 
 export async function sha256(file: File): Promise<string> {
