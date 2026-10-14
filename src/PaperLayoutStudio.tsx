@@ -119,10 +119,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  });
  function chooseMode(next:LayoutMode){
   setMode(next);setPageIndex(1);
-  if(next==="custom"){
-   const count=Math.max(1,customCount);
-   setCustomRegions([]);
-  }
+  if(next==="custom")setCustomRegions([]);
  }
  function resetTemplate(){
   setMargins({top:8,right:8,bottom:8,left:8});setGap(4);setFit("contain");setRows(3);setColumns(3);setRepeat(false);setStickerSizeEnabled(false);setStickerWidth(45);setStickerHeight(45);
