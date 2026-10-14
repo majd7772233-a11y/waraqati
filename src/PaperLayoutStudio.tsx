@@ -66,7 +66,10 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const [fit,setFit]=useState<ImageFit>("contain");
  const [rows,setRows]=useState(3);
  const [columns,setColumns]=useState(3);
- const [repeat,setRepeat]=useState(false);\n const [stickerSizeEnabled,setStickerSizeEnabled]=useState(false);\n const [stickerWidth,setStickerWidth]=useState(45);\n const [stickerHeight,setStickerHeight]=useState(45);
+ const [repeat,setRepeat]=useState(false);
+ const [stickerSizeEnabled,setStickerSizeEnabled]=useState(false);
+ const [stickerWidth,setStickerWidth]=useState(45);
+ const [stickerHeight,setStickerHeight]=useState(45);
  const [customCount,setCustomCount]=useState(2);
  const [customRegions,setCustomRegions]=useState<RegionDefinition[]>([]);
  const [pageIndex,setPageIndex]=useState(1);
