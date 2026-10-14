@@ -81,7 +81,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   if(!selectedImages.length)return null;
   try{
    const sources=repeat&&selectedImages.length===1
-    ? Array.from({length:Math.max(1,gridRows*gridColumns)},(_,i)=>({...selectedImages[0],id:`${selectedImages[0].id}__repeat_${i+1}`}))
+    ? Array.from({length:Math.max(1,mode==="custom"?customCount:gridRows*gridColumns)},(_,i)=>({...selectedImages[0],id:`${selectedImages[0].id}__repeat_${i+1}`}))
     : selectedImages;
    return calculateLayout({
     settings,images:sources.map(image=>({id:image.id,width:image.width,height:image.height})),
