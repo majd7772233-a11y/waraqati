@@ -446,3 +446,10 @@ h1 { position: relative; max-width: 680px; font-size: clamp(44px,5.3vw,76px); li
  .studio-workspace[data-mobile-panel="none"] .studio-preview-column { display:block; }
 }
 @media (prefers-reduced-motion:reduce) { .editor-toolbar-actions button,.paper-preview-sheet { transition:none; } }
+
+@media (min-width:761px) {
+ .studio-workspace[data-mobile-panel="assets"] .studio-template-panel,.studio-workspace[data-mobile-panel="assets"] .studio-properties-panel,.studio-workspace[data-mobile-panel="assets"] .studio-preview-column,.studio-workspace[data-mobile-panel="settings"] .studio-assets-panel,.studio-workspace[data-mobile-panel="settings"] .studio-preview-column { display:initial; }
+ .studio-workspace[data-mobile-panel="none"] .studio-sidebar { display:flex; }
+}
+.paper-preview-stage { cursor:grab; touch-action:none; }
+.paper-preview-stage:active { cursor:grabbing; }
