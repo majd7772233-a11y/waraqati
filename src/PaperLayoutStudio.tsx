@@ -72,6 +72,8 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const [error,setError]=useState("");
 
  const selectedImages=useMemo(()=>chosen.map(id=>images.find(image=>image.id===id)).filter((image):image is StudioImage=>Boolean(image)),[chosen,images]);
+ const gridRows=mode==="two-vertical"?2:mode==="three-vertical"?3:mode==="single"?1:mode==="two-horizontal"?1:mode==="three-horizontal"?1:rows;
+ const gridColumns=mode==="two-horizontal"?2:mode==="three-horizontal"?3:mode==="single"?1:mode==="two-vertical"?1:mode==="three-vertical"?1:columns;
  const settings:PaperSettings={size:size==="custom"?{preset:"custom",width:customWidth,height:customHeight}:{preset:size},orientation,unit,margins,gap};
  const dimensions=useMemo(()=>{try{return getPaperDimensions(settings.size,orientation,unit);}catch{return {width:210,height:297};}},[size,orientation,unit,customWidth,customHeight]);
  const customSource=useMemo(()=>customRegions.length===customCount?customRegions:defaultRegions(1,customCount,dimensions.width/unitFactor(unit),dimensions.height/unitFactor(unit),gap),[customRegions,customCount,dimensions.width,dimensions.height,unit,gap]);
@@ -91,8 +93,6 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[chosen,images,mode,size,orientation,unit,customWidth,customHeight,margins.top,margins.right,margins.bottom,margins.left,gap,fit,rows,columns,repeat,customCount,customSource]);
 
- const gridRows=mode==="two-vertical"?2:mode==="three-vertical"?3:mode==="single"?1:mode==="two-horizontal"?1:mode==="three-horizontal"?1:rows;
- const gridColumns=mode==="two-horizontal"?2:mode==="three-horizontal"?3:mode==="single"?1:mode==="two-vertical"?1:mode==="three-vertical"?1:columns;
  const activePage=layout?.pages[Math.min(pageIndex,layout.pages.length)-1]??null;
  const imageById=(id:string)=>images.find(image=>id===image.id||id.startsWith(`${image.id}__repeat_`));
  const setCustomField=(index:number,key:keyof RegionDefinition,value:number)=>setCustomRegions(old=>{
