@@ -151,6 +151,14 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   setUnit(next);
  }
  function toggleImage(id:string){setChosen(old=>old.includes(id)?old.filter(item=>item!==id):[...old,id]);setPageIndex(1);}
+ function applySnapshot(raw:string){
+  try{const v=JSON.parse(raw) as any;setChosen((v.chosen||[]).filter((id:string)=>images.some(image=>image.id===id)));setMode(v.mode);setSize(v.size);setOrientation(v.orientation);setUnit(v.unit);setCustomWidth(v.customWidth);setCustomHeight(v.customHeight);setMargins(v.margins);setGap(v.gap);setFit(v.fit);setRows(v.rows);setColumns(v.columns);setRepeat(v.repeat);setStickerSizeEnabled(v.stickerSizeEnabled);setStickerWidth(v.stickerWidth);setStickerHeight(v.stickerHeight);setCustomCount(v.customCount);setCustomRegions(v.customRegions||[]);setPageIndex(1);}catch{/* Ignore invalid history entries. */}
+ }
+ function travelHistory(nextIndex:number){const raw=historyRef.current[nextIndex];if(!raw)return;setHistoryIndex(nextIndex);applySnapshot(raw);}
+ function projectData(){return {format:"waraqati-project",version:1,name:projectName,updatedAt:new Date().toISOString(),editor:JSON.parse(historyKey)};}
+ function saveProject(){try{window.localStorage.setItem("waraqati-draft-project",JSON.stringify(projectData()));setSavedAt(new Date().toLocaleTimeString(locale==="ar"?"ar":"en",{hour:"2-digit",minute:"2-digit"}));}catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");}}
+ function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="waraqati-project.json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if(!(event.ctrlKey||event.metaKey)||event.altKey)return;const key=event.key.toLowerCase();if(key==="z"){event.preventDefault();travelHistory(Math.max(0,historyIndex-(event.shiftKey?-1:1)));}else if(key==="y"){event.preventDefault();travelHistory(Math.min(historyRef.current.length-1,historyIndex+1));}else if(key==="s"){event.preventDefault();saveProject();}};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);},[historyIndex,historyKey,projectName,locale,images]);
 
  return <section className="studio-section" id="layout-studio" aria-labelledby="studio-title">
   <div className="studio-heading"><div><div className="section-kicker">{t.kicker}</div><h2 id="studio-title">{t.title}</h2><p>{t.subtitle}</p></div><span className="studio-badge"><i/> {selectedImages.length} {t.photos}</span></div>
