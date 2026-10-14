@@ -45,6 +45,9 @@ const copy = {
 } as const;
 
 const templateModes: LayoutMode[] = ["single","two-horizontal","two-vertical","three-horizontal","three-vertical","stickers","custom"];
+const templateLabelKey: Record<LayoutMode, keyof typeof copy.ar> = {
+ single:"single","two-horizontal":"twoH","two-vertical":"twoV","three-horizontal":"threeH","three-vertical":"threeV",stickers:"stickers",custom:"custom",
+};
 
 function defaultRegions(rows: number, columns: number, width: number, height: number, gap: number): RegionDefinition[] {
  const cellW=(width-gap*(columns-1))/columns, cellH=(height-gap*(rows-1))/rows;
@@ -76,7 +79,12 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const gridColumns=mode==="two-horizontal"?2:mode==="three-horizontal"?3:mode==="single"?1:mode==="two-vertical"?1:mode==="three-vertical"?1:columns;
  const settings:PaperSettings={size:size==="custom"?{preset:"custom",width:customWidth,height:customHeight}:{preset:size},orientation,unit,margins,gap};
  const dimensions=useMemo(()=>{try{return getPaperDimensions(settings.size,orientation,unit);}catch{return {width:210,height:297};}},[size,orientation,unit,customWidth,customHeight]);
- const customSource=useMemo(()=>customRegions.length===customCount?customRegions:defaultRegions(1,customCount,dimensions.width/unitFactor(unit),dimensions.height/unitFactor(unit),gap),[customRegions,customCount,dimensions.width,dimensions.height,unit,gap]);
+ const customSource=useMemo(()=>{
+  if(customRegions.length===customCount)return customRegions;
+  const factor=unitFactor(unit),pageWidth=dimensions.width/factor,pageHeight=dimensions.height/factor;
+  const availableWidth=pageWidth-margins.left-margins.right,availableHeight=pageHeight-margins.top-margins.bottom;
+  return defaultRegions(1,customCount,availableWidth,availableHeight,gap).map(region=>({...region,x:region.x+margins.left,y:region.y+margins.top}));
+ },[customRegions,customCount,dimensions.width,dimensions.height,unit,gap,margins.top,margins.right,margins.bottom,margins.left]);
  const stickerRegions=useMemo(()=>{
   const factor=unitFactor(unit);
   const pageWidth=dimensions.width/factor, pageHeight=dimensions.height/factor;
@@ -132,7 +140,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
      {selectedImages.length>0&&<div className="studio-selected-order"><div className="studio-subheading">{t.order}</div>{selectedImages.map((image,index)=><div className="studio-order-row" key={image.id}><span>{index+1}</span><strong title={image.name}>{image.name}</strong><button type="button" disabled={index===0} title={t.up} aria-label={t.up} onClick={()=>setChosen(old=>{const next=[...old];[next[index-1],next[index]]=[next[index],next[index-1]];return next;})}>↑</button><button type="button" disabled={index===selectedImages.length-1} title={t.down} aria-label={t.down} onClick={()=>setChosen(old=>{const next=[...old];[next[index],next[index+1]]=[next[index+1],next[index]];return next;})}>↓</button></div>)}</div>}
     </section>
     <section className="studio-panel"><div className="studio-panel-title"><span className="studio-panel-icon">▦</span><div><h3>{t.templates}</h3><p>{t.reset}</p></div></div>
-     <div className="template-grid">{templateModes.map((item,index)=><button key={item} type="button" onClick={()=>chooseMode(item)} className={`template-choice ${mode===item?"is-active":""}`} aria-pressed={mode===item}><span className={`template-glyph glyph-${index+1}`} aria-hidden="true"><i/><i/><i/></span><strong>{t[item==="two-horizontal"?"twoH":item==="two-vertical"?"twoV":item==="three-horizontal"?"threeH":item==="three-vertical"?"threeV":item]}</strong></button>)}</div>
+     <div className="template-grid">{templateModes.map((item,index)=><button key={item} type="button" onClick={()=>chooseMode(item)} className={`template-choice ${mode===item?"is-active":""}`} aria-pressed={mode===item}><span className={`template-glyph glyph-${index+1}`} aria-hidden="true"><i/><i/><i/></span><strong>{t[templateLabelKey[item]]}</strong></button>)}</div>
     </section>
     <section className="studio-panel"><div className="studio-panel-title"><span className="studio-panel-icon">⌗</span><div><h3>{t.paper}</h3><p>{t.unit}</p></div></div>
      <div className="studio-fields">
