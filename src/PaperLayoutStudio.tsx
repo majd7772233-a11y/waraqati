@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   calculateLayout,
   getPaperDimensions,
@@ -8,8 +8,6 @@ import {
   type PaperPreset,
   type PaperSettings,
   type RegionDefinition,
-  type Rect,
-  LayoutError,
 } from "./paperLayout";
 
 export interface StudioImage {
@@ -113,6 +111,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const layout=layoutState.value;
  const layoutError=layoutState.error;
  const activePage=layout?.pages[Math.min(pageIndex,layout.pages.length)-1]??null;
+ useEffect(()=>{if(layout&&pageIndex>layout.pageCount)setPageIndex(layout.pageCount);},[layout?.pageCount,pageIndex]);
  const imageById=(id:string)=>images.find(image=>id===image.id||id.startsWith(`${image.id}__repeat_`));
  const setCustomField=(index:number,key:keyof RegionDefinition,value:number)=>setCustomRegions(old=>{
   const base=old.length===customCount?old:customSource;
@@ -122,7 +121,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   setMode(next);setPageIndex(1);
   if(next==="custom"){
    const count=Math.max(1,customCount);
-   setCustomRegions(defaultRegions(1,count,dimensions.width/unitFactor(unit),dimensions.height/unitFactor(unit),gap));
+   setCustomRegions([]);
   }
  }
  function resetTemplate(){
