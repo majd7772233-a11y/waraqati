@@ -126,6 +126,16 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   setMargins({top:8,right:8,bottom:8,left:8});setGap(4);setFit("contain");setRows(3);setColumns(3);setRepeat(false);setStickerSizeEnabled(false);setStickerWidth(45);setStickerHeight(45);
   setCustomRegions([]);setCustomCount(2);setPageIndex(1);
  }
+ function changeUnit(next:MeasurementUnit){
+  if(next===unit)return;
+  const scale=unitFactor(unit)/unitFactor(next);
+  setMargins(old=>({top:old.top*scale,right:old.right*scale,bottom:old.bottom*scale,left:old.left*scale}));
+  setGap(old=>old*scale);
+  setCustomWidth(old=>old*scale);setCustomHeight(old=>old*scale);
+  setStickerWidth(old=>old*scale);setStickerHeight(old=>old*scale);
+  setCustomRegions(old=>old.map(region=>({...region,x:region.x*scale,y:region.y*scale,width:region.width*scale,height:region.height*scale})));
+  setUnit(next);
+ }
  function toggleImage(id:string){setChosen(old=>old.includes(id)?old.filter(item=>item!==id):[...old,id]);setPageIndex(1);}
 
  return <section className="studio-section" id="layout-studio" aria-labelledby="studio-title">
@@ -143,7 +153,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
      <div className="studio-fields">
       <label className="studio-field"><span>{t.size}</span><select value={size} onChange={e=>{setSize(e.target.value as PaperPreset|"custom");setPageIndex(1);}}><option value="A4">A4</option><option value="A3">A3</option><option value="A5">A5</option><option value="Letter">Letter</option><option value="custom">{locale==="ar"?"مخصص":"Custom"}</option></select></label>
       <label className="studio-field"><span>{t.orientation}</span><select value={orientation} onChange={e=>{setOrientation(e.target.value as PaperOrientation);setPageIndex(1);}}><option value="portrait">{t.portrait}</option><option value="landscape">{t.landscape}</option></select></label>
-      <label className="studio-field"><span>{t.unit}</span><select value={unit} onChange={e=>{setUnit(e.target.value as MeasurementUnit);setCustomRegions([]);}}><option value="mm">mm</option><option value="cm">cm</option><option value="in">in</option></select></label>
+      <label className="studio-field"><span>{t.unit}</span><select value={unit} onChange={e=>changeUnit(e.target.value as MeasurementUnit)}><option value="mm">mm</option><option value="cm">cm</option><option value="in">in</option></select></label>
       {size==="custom"&&<div className="studio-two-fields"><label className="studio-field"><span>{t.width}</span><input type="number" min="1" value={customWidth} onChange={e=>setCustomWidth(Number(e.target.value))}/></label><label className="studio-field"><span>{t.height}</span><input type="number" min="1" value={customHeight} onChange={e=>setCustomHeight(Number(e.target.value))}/></label></div>}
       <div className="studio-subheading">{t.margins} <small>({unit})</small></div>
       <div className="studio-margin-grid">{(["top","right","bottom","left"] as const).map(side=><label className="studio-field" key={side}><span>{t[side]}</span><input type="number" min="0" step="0.5" value={margins[side]} onChange={e=>setMargins(old=>({...old,[side]:Number(e.target.value)}))}/></label>)}</div>
