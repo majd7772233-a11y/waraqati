@@ -39,7 +39,7 @@ export interface ImageSource {
 export interface GridDefinition {
   rows: number;
   columns: number;
-  /** Optional override in the selected unit. Defaults to PaperSettings.gap. */
+  /** Optional gap in millimetres for direct createGridRegions calls. calculateLayout accepts it in settings.unit. */
   gap?: number;
 }
 
