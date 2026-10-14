@@ -32,6 +32,7 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
  const [previewIndex,setPreviewIndex]=useState(0);
  const [previewUrl,setPreviewUrl]=useState("");
  useEffect(()=>{if(!pages.length){setPreviewUrl("");return;}const url=URL.createObjectURL(pages[previewIndex].blob);setPreviewUrl(url);return()=>URL.revokeObjectURL(url);},[pages,previewIndex]);
+ useEffect(()=>{setSelected(old=>old.filter(id=>images.some(image=>image.id===id)));setPages([]);},[images]);
  const selectedImages=useMemo(()=>selected.map(id=>images.find(image=>image.id===id)).filter((image):image is PhotoStudioImage=>Boolean(image)),[selected,images]);
  const dimensions=useMemo(()=>preset==="4x6"?{width:101.6,height:152.4}:preset==="5x7"?{width:127,height:177.8}:preset==="A4"?{width:210,height:297}:{width:customWidth,height:customHeight},[preset,customWidth,customHeight]);
  function toggle(id:string){setSelected(old=>old.includes(id)?old.filter(value=>value!==id):[...old,id]);setPages([]);}
