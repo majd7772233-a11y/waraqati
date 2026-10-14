@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { downloadBlob, makeOutputName, outputExtension, processImage, sha256, type OutputImageFormat, type ProcessedImage, type Rotation } from "./imageProcessing";
+import { downloadBlob, makeOutputName, processImage, sha256, type OutputImageFormat, type ProcessedImage, type Rotation } from "./imageProcessing";
 
 export interface BatchLabImage { id: string; name: string; url: string; width: number; height: number; file: File }
 type Locale = "ar" | "en";
