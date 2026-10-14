@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { downloadBlob, makeOutputName, outputExtension, processImage, sha256, type OutputImageFormat, type ProcessedImage, type Rotation } from "./imageProcessing";
 
 export interface BatchLabImage { id: string; name: string; url: string; width: number; height: number; file: File }
@@ -23,15 +23,15 @@ export default function BatchLab({ images, locale }: { images: BatchLabImage[]; 
  const [outputs,setOutputs]=useState<BatchOutput[]>([]);
  const [errors,setErrors]=useState<Record<string,string>>({});
  const [duplicateGroups,setDuplicateGroups]=useState<string[][]>([]);
+ const [duplicateScanDone,setDuplicateScanDone]=useState(false);
  const [scanBusy,setScanBusy]=useState(false);
  const selectedImages=useMemo(()=>selected.map(id=>images.find(image=>image.id===id)).filter((image):image is BatchLabImage=>Boolean(image)),[selected,images]);
- useEffect(()=>()=>outputs.forEach(item=>URL.revokeObjectURL(URL.createObjectURL(item.blob))),[outputs]);
- function toggle(id:string){setSelected(old=>old.includes(id)?old.filter(value=>value!==id):[...old,id]);setOutputs([]);setErrors({});}
- function selectAll(){setSelected(old=>old.length===images.length?[]:images.map(image=>image.id));setOutputs([]);}
+ function toggle(id:string){setSelected(old=>old.includes(id)?old.filter(value=>value!==id):[...old,id]);setOutputs([]);setErrors({});setDuplicateScanDone(false);}
+ function selectAll(){setSelected(old=>old.length===images.length?[]:images.map(image=>image.id));setOutputs([]);setDuplicateScanDone(false);}
  function options(){return {format,maxWidth:Math.max(1,maxWidth),maxHeight:Math.max(1,maxHeight),quality,rotation,trimTransparent};}
  async function preview(){
   if(!selectedImages.length)return;
-  setBusy(true);setOutputs([]);setErrors({});setDuplicateGroups([]);
+  setBusy(true);setOutputs([]);setErrors({});setDuplicateGroups([]);setDuplicateScanDone(false);
   const ready:BatchOutput[]=[];const failures:Record<string,string>={};
   for(let index=0;index<selectedImages.length;index++){
    const image=selectedImages[index];
@@ -49,7 +49,7 @@ export default function BatchLab({ images, locale }: { images: BatchLabImage[]; 
   try{
    const groups=new Map<string,string[]>();
    for(const image of selectedImages){const hash=await sha256(image.file);const group=groups.get(hash)||[];group.push(image.id);groups.set(hash,group);}
-   setDuplicateGroups(Array.from(groups.values()).filter(group=>group.length>1));
+   setDuplicateGroups(Array.from(groups.values()).filter(group=>group.length>1));setDuplicateScanDone(true);
   }catch(error){setErrors(old=>({...old,scan:error instanceof Error?error.message:"SHA-256 unavailable"}));}
   finally{setScanBusy(false);}
  }
@@ -74,7 +74,7 @@ export default function BatchLab({ images, locale }: { images: BatchLabImage[]; 
    {Object.entries(errors).map(([id,message])=><p className="feature-error" role="alert" key={id}>{id==="scan"?"SHA-256: ":""}{message}</p>)}
    {outputs.length>0&&<><p className="feature-success" role="status">{t.done} · {outputs.length} {t.items}. {totalSaved>=0?"+":""}{totalSaved.toLocaleString()} bytes difference</p><div className="batch-output-grid"><h3>{t.results}</h3>{outputs.map(item=><article className="batch-output-card" key={item.id}><div><strong>{item.filename}</strong><span>{item.width} × {item.height} px · {Math.round(item.sizeBefore/1024)} KB → {Math.round(item.blob.size/1024)} KB</span></div><button type="button" onClick={()=>downloadBlob(item.blob,item.filename)}>{t.downloadOne}</button></article>)}</div></>}
    {duplicateGroups.length>0&&<div className="duplicate-results"><h3>{t.dupes} · {duplicateGroups.length}</h3>{duplicateGroups.map((group,index)=><p key={index}>{group.map(id=>images.find(image=>image.id===id)?.name||id).join(" · ")}</p>)}</div>}
-   {duplicateGroups.length===0&&!scanBusy&&selected.length>1&&<p className="feature-note">{t.noDuplicates}</p>}
+   {duplicateScanDone&&duplicateGroups.length===0&&!scanBusy&&selected.length>1&&<p className="feature-note">{t.noDuplicates}</p>}
   </div></div>
  </section>;
 }
