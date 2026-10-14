@@ -114,7 +114,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  const activePage=layout?.pages[Math.min(pageIndex,layout.pages.length)-1]??null;
  useEffect(()=>{if(layout&&pageIndex>layout.pageCount)setPageIndex(layout.pageCount);},[layout?.pageCount,pageIndex]);
  const imageById=(id:string)=>images.find(image=>id===image.id||id.startsWith(`${image.id}__repeat_`));
- const setCustomField=(index:number,key:keyof RegionDefinition,value:number)=>setCustomRegions(old=>{
+ const setCustomField=(index:number,key:"x"|"y"|"width"|"height",value:number)=>setCustomRegions(old=>{
   const base=old.length===customCount?old:customSource;
   return base.map((region,i)=>i===index?{...region,[key]:value}:region);
  });
