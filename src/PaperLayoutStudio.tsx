@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { exportLayoutPageAsImage, exportLayoutToPdf, type ExportDpi, type ExportFormat, type ExportBackground } from "./exporter";
 import {
   calculateLayout,
   getPaperDimensions,
@@ -78,6 +79,12 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   const dragRef=useRef<{pointerId:number;startX:number;startY:number;panX:number;panY:number}|null>(null);
   const [projectName,setProjectName]=useState(locale==="ar"?"مشروعي الأول":"My first project");
   const [savedAt,setSavedAt]=useState("");
+  const [exportDpi,setExportDpi]=useState<ExportDpi>(150);
+  const [exportQuality,setExportQuality]=useState(0.92);
+  const [exportBackground,setExportBackground]=useState<ExportBackground>("white");
+  const [exportBusy,setExportBusy]=useState(false);
+  const [exportProgress,setExportProgress]=useState({completed:0,total:0,label:""});
+  const [exportError,setExportError]=useState("");
   const [mobilePanel,setMobilePanel]=useState<"assets"|"settings"|"none">("none");
   const [historyIndex,setHistoryIndex]=useState(0);
   const historyReady=useRef(false);
@@ -160,6 +167,18 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  function projectData(){return {format:"waraqati-project",version:1,name:projectName,updatedAt:new Date().toISOString(),editor:JSON.parse(historyKey)};}
  function saveProject(){try{window.localStorage.setItem("waraqati-draft-project",JSON.stringify(projectData()));setSavedAt(new Date().toLocaleTimeString(locale==="ar"?"ar":"en",{hour:"2-digit",minute:"2-digit"}));}catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");}}
  function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="waraqati-project.json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ async function startExport(format:"pdf"|ExportFormat){
+  if(!layout||exportBusy)return;
+  setExportBusy(true);setExportError("");setExportProgress({completed:0,total:format==="pdf"?layout.pages.length:1,label:"render"});
+  try{
+   const options={dpi:exportDpi,quality:exportQuality,background:exportBackground};
+   const onProgress=(completed:number,total:number,label:string)=>setExportProgress({completed,total,label});
+   if(format==="pdf")await exportLayoutToPdf(layout,images,options,onProgress,projectName);
+   else await exportLayoutPageAsImage(layout,images,Math.min(pageIndex,layout.pages.length)-1,format,options,onProgress,projectName);
+   setExportProgress(current=>({...current,label:"done"}));
+  }catch(error){setExportError(error instanceof Error?error.message:(locale==="ar"?"حدث خطأ أثناء التصدير.":"Export failed."));}
+  finally{setExportBusy(false);}
+ }
  useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if(!(event.ctrlKey||event.metaKey)||event.altKey)return;const key=event.key.toLowerCase();if(key==="z"){event.preventDefault();travelHistory(Math.max(0,historyIndex-(event.shiftKey?-1:1)));}else if(key==="y"){event.preventDefault();travelHistory(Math.min(historyRef.current.length-1,historyIndex+1));}else if(key==="s"){event.preventDefault();saveProject();}};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);},[historyIndex,historyKey,projectName,locale,images]);
 
  return <section className="studio-section" id="layout-studio" aria-labelledby="studio-title">
@@ -199,6 +218,19 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
    <div className="studio-preview-column">
     <div className="studio-preview-toolbar"><div><span className="studio-live-dot"/><div><h3>{t.preview}</h3><p>{layout?layout.pageCount:0} {t.pages} · {layout?.regionCount??0} {t.slots}</p></div></div>{layout&&layout.pageCount>1&&<div className="studio-pagination"><button type="button" disabled={pageIndex<=1} onClick={()=>setPageIndex(p=>Math.max(1,p-1))} aria-label={t.previous}>‹</button><span>{t.page} {Math.min(pageIndex,layout.pageCount)} {t.of} {layout.pageCount}</span><button type="button" disabled={pageIndex>=layout.pageCount} onClick={()=>setPageIndex(p=>Math.min(layout.pageCount,p+1))} aria-label={t.next}>›</button></div>}</div>
     {layout&&activePage?<><div className="paper-preview-stage" onPointerDown={event=>{if(event.button!==0)return;dragRef.current={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,panX:pan.x,panY:pan.y};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerMove={event=>{const drag=dragRef.current;if(!drag||drag.pointerId!==event.pointerId)return;setPan({x:drag.panX+event.clientX-drag.startX,y:drag.panY+event.clientY-drag.startY});}} onPointerUp={event=>{if(dragRef.current?.pointerId===event.pointerId)dragRef.current=null;}} onPointerCancel={()=>{dragRef.current=null;}}><div className="paper-preview-sheet" style={{aspectRatio:`${activePage.width}/${activePage.height}`,transform:"translate("+pan.x+"px,"+pan.y+"px) scale("+zoom/100+")",transformOrigin:"center center"}}><svg viewBox={`0 0 ${activePage.width} ${activePage.height}`} role="img" aria-label={`${t.preview} ${activePage.index}`} preserveAspectRatio="xMidYMid meet"><rect x="0" y="0" width={activePage.width} height={activePage.height} fill="#fff"/><rect x={layout.paper.content.x} y={layout.paper.content.y} width={layout.paper.content.width} height={layout.paper.content.height} fill="none" stroke="#d6d1e5" strokeDasharray="1.5 1.5" strokeWidth=".35"/>{activePage.slots.map((slot,index)=>{const image=slot.image?imageById(slot.image.imageId):undefined;return <g key={slot.regionId+"-"+index}><rect x={slot.region.x} y={slot.region.y} width={slot.region.width} height={slot.region.height} fill={image?"#f5f3fa":"#faf9fd"} stroke="#d8d3e5" strokeWidth=".45" strokeDasharray={image?"0":"2 1.5"}/>{image&&slot.image&&<svg x={slot.image.draw.x} y={slot.image.draw.y} width={slot.image.draw.width} height={slot.image.draw.height} viewBox={`${slot.image.sourceCrop.x*image.width} ${slot.image.sourceCrop.y*image.height} ${slot.image.sourceCrop.width*image.width} ${slot.image.sourceCrop.height*image.height}`} preserveAspectRatio="none" overflow="hidden"><image href={image.url} x="0" y="0" width={image.width} height={image.height} preserveAspectRatio="none"/></svg>}{!image&&<text x={slot.region.x+slot.region.width/2} y={slot.region.y+slot.region.height/2} textAnchor="middle" dominantBaseline="middle" fill="#9b96ad" fontSize={Math.min(slot.region.width,slot.region.height)*.08}>＋</text>}</g>})}</svg></div></div><div className="studio-preview-stats"><span><strong>{layout.imageCount}</strong>{t.photos}</span><span><strong>{layout.pageCount}</strong>{t.pages}</span><span><strong>{activePage.slots.filter(slot=>slot.image).length}</strong> / {activePage.slots.length} {t.slots}</span></div></>:<div className="studio-preview-empty" role={layoutError?"alert":undefined}><span>▧</span><strong>{selectedImages.length?t.layoutError:t.noSelection}</strong><p>{selectedImages.length?layoutError:t.noSelection}</p></div>}
+    <section className="studio-export-panel" aria-labelledby="studio-export-title">
+     <div className="studio-export-heading"><div><span className="studio-panel-icon">⇩</span><div><h3 id="studio-export-title">{locale==="ar"?"التصدير والطباعة":"Export & print"}</h3><p>{locale==="ar"?"PDF يجمع كل الصفحات؛ PNG وJPEG يصدران الصفحة الحالية.":"PDF includes every page; PNG and JPEG export the current page."}</p></div></div><span className="studio-export-local">{locale==="ar"?"محلي وآمن":"Local export"}</span></div>
+     <div className="studio-export-options">
+      <label className="studio-field"><span>{locale==="ar"?"دقة التصدير":"Export resolution"}</span><select value={exportDpi} onChange={e=>setExportDpi(Number(e.target.value) as ExportDpi)}><option value={72}>72 DPI · معاينة</option><option value={150}>150 DPI · متوازن</option><option value={300}>300 DPI · عالٍ</option></select></label>
+      <label className="studio-field"><span>{locale==="ar"?"جودة JPEG":"JPEG quality"} · {Math.round(exportQuality*100)}%</span><input type="range" min="0.6" max="1" step="0.05" value={exportQuality} onChange={e=>setExportQuality(Number(e.target.value))}/></label>
+      <label className="studio-field"><span>{locale==="ar"?"خلفية PNG":"PNG background"}</span><select value={exportBackground} onChange={e=>setExportBackground(e.target.value as ExportBackground)}><option value="white">{locale==="ar"?"أبيض":"White"}</option><option value="transparent">{locale==="ar"?"شفافة":"Transparent"}</option></select></label>
+     </div>
+     <div className="studio-export-actions"><button type="button" className="studio-export-primary" onClick={()=>startExport("pdf")} disabled={!layout||exportBusy}>{exportBusy&&exportProgress.label!=="done"?"◌ ":"▤ "}{locale==="ar"?"تصدير PDF متعدد الصفحات":"Export multi-page PDF"}</button><button type="button" onClick={()=>startExport("png")} disabled={!layout||exportBusy}>PNG · {locale==="ar"?"الصفحة الحالية":"Current page"}</button><button type="button" onClick={()=>startExport("jpeg")} disabled={!layout||exportBusy}>JPEG · {locale==="ar"?"الصفحة الحالية":"Current page"}</button></div>
+     {exportBusy&&<div className="studio-export-progress" role="status"><div><span>{locale==="ar"?"جارٍ تجهيز الملفات…":"Preparing export…"}</span><strong>{exportProgress.total?Math.round(exportProgress.completed/exportProgress.total*100):0}%</strong></div><progress max={Math.max(1,exportProgress.total)} value={exportProgress.completed}/></div>}
+     {!exportBusy&&exportProgress.label==="done"&&!exportError&&<p className="studio-export-success" role="status">{locale==="ar"?"اكتمل التصدير وبدأ تنزيل الملف.":"Export complete; the download has started."}</p>}
+     {exportError&&<p className="studio-export-error" role="alert">{exportError}</p>}
+     <p className="studio-export-footnote">{locale==="ar"?"تُعالج الصور داخل المتصفح. صفحات PDF بخلفية بيضاء؛ شفافية الخلفية متاحة لتصدير PNG فقط. الطباعة بلا حدود تعتمد على الطابعة.":"Images are processed in your browser. PDF pages use a white background; transparency is available for PNG only. Borderless printing depends on your printer."}</p>
+    </section>
     <p className="studio-print-note"><span>◇</span>{t.printNote}</p>
    </div>
   </div>
