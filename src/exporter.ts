@@ -159,7 +159,7 @@ function joinBytes(parts: Uint8Array[]): Uint8Array {
   return output;
 }
 
-function buildPdf(pages: Array<{ bytes: Uint8Array; width: number; height: number }>): Blob {
+function buildPdf(pages: Array<{ bytes: Uint8Array; pageWidthMm: number; pageHeightMm: number; pixelWidth: number; pixelHeight: number }>): Blob {
   const objects: Uint8Array[] = [];
   const offsets: number[] = [0];
   const addObject = (body: Uint8Array) => objects.push(body);
@@ -170,11 +170,11 @@ function buildPdf(pages: Array<{ bytes: Uint8Array; width: number; height: numbe
     const pageId = 3 + index * 3;
     const imageId = pageId + 1;
     const contentId = pageId + 2;
-    const widthPt = page.width / 25.4 * 72;
-    const heightPt = page.height / 25.4 * 72;
+    const widthPt = page.pageWidthMm / 25.4 * 72;
+    const heightPt = page.pageHeightMm / 25.4 * 72;
     addObject(ascii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${widthPt.toFixed(3)} ${heightPt.toFixed(3)}] /Resources << /XObject << /Im0 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`));
     addObject(joinBytes([
-      ascii(`<< /Type /XObject /Subtype /Image /Width ${page.bytes.length ? page.width : 1} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\nstream\n`),
+      ascii(`<< /Type /XObject /Subtype /Image /Width ${page.pixelWidth} /Height ${page.pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\nstream\n`),
       page.bytes,
       ascii("\nendstream"),
     ]));
@@ -214,14 +214,14 @@ export async function exportLayoutToPdf(
     throw new Error("المشروع كبير جدًا لهذه الدقة. اختر 72 أو 150 DPI أو قلل عدد الصفحات.");
   }
 
-  const rendered: Array<{ bytes: Uint8Array; width: number; height: number }> = [];
+  const rendered: Array<{ bytes: Uint8Array; pageWidthMm: number; pageHeightMm: number; pixelWidth: number; pixelHeight: number }> = [];
   for (let index = 0; index < layout.pages.length; index++) {
     onProgress(index, layout.pages.length, "render");
     const page = layout.pages[index];
     const canvas = await renderPage(page, images, options, "pdf");
     const blob = await canvasBlob(canvas, "image/jpeg", options.quality);
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    rendered.push({ bytes, width: page.width, height: page.height });
+    rendered.push({ bytes, pageWidthMm: page.width, pageHeightMm: page.height, pixelWidth: canvas.width, pixelHeight: canvas.height });
     canvas.width = 1;
     canvas.height = 1;
     onProgress(index + 1, layout.pages.length, "render");
