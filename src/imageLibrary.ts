@@ -26,7 +26,7 @@ function readU32(view: DataView, offset: number): number {
 
 async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   const Stream = DecompressionStream as unknown as new (format: string) => TransformStream<Uint8Array, Uint8Array>;
-  const stream = new Blob([data]).stream().pipeThrough(new Stream("deflate-raw"));
+  const stream = new Blob([data.slice().buffer as ArrayBuffer]).stream().pipeThrough(new Stream("deflate-raw"));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
@@ -109,7 +109,7 @@ export async function readImageZip(file: File): Promise<ZipImportResult> {
         continue;
       }
       const safeName = name.split("/").pop() || "image";
-      files.push(new File([output], safeName, { type: mimeFromName(safeName), lastModified: Date.now() }));
+      files.push(new File([output], safeName, { type: mimeFromName(safeName), lastModified: 0 }));
     } catch {
       damaged++;
     }
