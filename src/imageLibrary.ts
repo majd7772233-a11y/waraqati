@@ -109,7 +109,7 @@ export async function readImageZip(file: File): Promise<ZipImportResult> {
         continue;
       }
       const safeName = name.split("/").pop() || "image";
-      files.push(new File([output], safeName, { type: mimeFromName(safeName), lastModified: 0 }));
+      files.push(new File([output.slice().buffer as ArrayBuffer], safeName, { type: mimeFromName(safeName), lastModified: 0 }));
     } catch {
       damaged++;
     }
