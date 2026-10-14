@@ -6,8 +6,8 @@
   "description": "Waraqati Studio — arrange, create, and prepare images for printing.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "check": "tsc -b --pretty",
+    "build": "npm run check && vite build",
+    "check": "tsc -p tsconfig.app.json --pretty && tsc -p tsconfig.node.json --pretty",
     "test": "vitest run",
     "test:watch": "vitest"
   },
