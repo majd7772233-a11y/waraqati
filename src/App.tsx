@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getDirection, getMessages, type Locale } from "./i18n";
 import { isSupportedImage, readImageZip } from "./imageLibrary";
+import PaperLayoutStudio from "./PaperLayoutStudio";
 
 type SortMode = "name" | "size" | "date";
 interface LibraryImage { id: string; file: File; url: string; width: number; height: number }
@@ -88,6 +89,8 @@ export default function App() {
    </>:<div className="empty-state"><span className="empty-icon">▧</span><strong>{t.emptyLibrary}</strong><p>{t.emptyLibraryHint}</p></div>}
    <p className="privacy-note"><span aria-hidden="true">◇</span>{t.privacyNote}</p>
   </section>
+
+  <PaperLayoutStudio images={images.map(image=>({id:image.id,name:image.file.name,url:image.url,width:image.width,height:image.height}))} locale={locale} />
 
   <section className="tools-section" id="tools" aria-labelledby="tools-title"><div className="section-heading"><div><div className="section-kicker">{t.workspaceLabel}</div><h2 id="tools-title">{t.tools}</h2><p>{t.toolsSubtitle}</p></div><span className="section-count"><strong>04</strong><i/>{t.toolCount}</span></div><div className="tool-grid">{[t.layout,t.stickers,t.photos,t.batch].map((name,i)=><article className={`tool-card tool-card-${i+1}`} key={name}><div className="tool-card-top"><span className="tool-number">0{i+1}</span><span className="tool-icon" aria-hidden="true">{toolIcons[i]}</span></div><h3>{name}</h3><p className="tool-description">{[t.layoutDescription,t.stickersDescription,t.photosDescription,t.batchDescription][i]}</p><div className="tool-card-bottom"><span className="coming-soon"><i/>{t.comingSoon}</span><span className="card-arrow">↗</span></div></article>)}</div><p className="tools-disclaimer"><span>✦</span>{t.toolsDisclaimer}</p></section>
   <section className="principles" aria-label={t.principlesLabel}><article><span className="principle-icon">◈</span><div><h3>{t.localFirst}</h3><p>{t.localFirstBody}</p></div></article><article><span className="principle-icon">⌗</span><div><h3>{t.precision}</h3><p>{t.precisionBody}</p></div></article><article><span className="principle-icon">▣</span><div><h3>{t.responsive}</h3><p>{t.responsiveBody}</p></div></article></section>
