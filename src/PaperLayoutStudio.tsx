@@ -26,7 +26,7 @@ type StudioLocale = "ar" | "en";
 const copy = {
  ar: {
   kicker:"03 / استوديو التخطيط", title:"من صورك إلى ورقة جاهزة.", subtitle:"اختر قالبًا، اضبط القياسات، وعاين كل صفحة قبل الانتقال إلى التصدير.",
-  library:"صور المكتبة", libraryHint:"حدد الصور التي تريد وضعها في الورقة.", addAll:"إضافة الكل", clear:"مسح التحديد", empty:"استورد صورًا أولًا من مكتبة الصور أعلاه.",
+  library:"صور المكتبة", order:"ترتيب الصور", up:"للأعلى", down:"للأسفل", libraryHint:"حدد الصور التي تريد وضعها في الورقة.", addAll:"إضافة الكل", clear:"مسح التحديد", empty:"استورد صورًا أولًا من مكتبة الصور أعلاه.",
   templates:"قوالب التخطيط", single:"صورة واحدة", singleHint:"ملء الورقة أو احتواء الصورة", twoH:"صورتان · أفقي", twoV:"صورتان · عمودي", threeH:"ثلاث صور · أفقي", threeV:"ثلاث صور · عمودي", stickers:"شبكة ملصقات", custom:"مناطق مخصصة",
   paper:"إعدادات الورقة", size:"مقاس الورق", orientation:"الاتجاه", portrait:"عمودي", landscape:"أفقي", unit:"وحدة القياس", width:"العرض", height:"الارتفاع", margins:"الهوامش", top:"أعلى", right:"يمين", bottom:"أسفل", left:"يسار", gap:"المسافة بين الصور",
   fit:"طريقة ملاءمة الصورة", contain:"احتواء كامل", cover:"ملء مع قص", repeat:"تكرار أول صورة لملء الخانات", rows:"الصفوف", columns:"الأعمدة", count:"عدد المناطق", regions:"ضبط مناطق التخطيط", region:"منطقة", x:"X", y:"Y", apply:"تحديث المعاينة",
@@ -35,7 +35,7 @@ const copy = {
  },
  en: {
   kicker:"03 / LAYOUT STUDIO", title:"Turn your images into a page.", subtitle:"Choose a template, fine-tune measurements, and preview every page before exporting.",
-  library:"Library images", libraryHint:"Select the images you want to place on paper.", addAll:"Add all", clear:"Clear selection", empty:"Import images in the library above first.",
+  library:"Library images", order:"Image order", up:"Move up", down:"Move down", libraryHint:"Select the images you want to place on paper.", addAll:"Add all", clear:"Clear selection", empty:"Import images in the library above first.",
   templates:"Layout templates", single:"Single image", singleHint:"Fill the page or contain the image", twoH:"Two · horizontal", twoV:"Two · vertical", threeH:"Three · horizontal", threeV:"Three · vertical", stickers:"Sticker grid", custom:"Custom regions",
   paper:"Paper settings", size:"Paper size", orientation:"Orientation", portrait:"Portrait", landscape:"Landscape", unit:"Measurement unit", width:"Width", height:"Height", margins:"Margins", top:"Top", right:"Right", bottom:"Bottom", left:"Left", gap:"Gap between images",
   fit:"Image fitting", contain:"Contain", cover:"Cover & crop", repeat:"Repeat first image to fill slots", rows:"Rows", columns:"Columns", count:"Region count", regions:"Edit layout regions", region:"Region", x:"X", y:"Y", apply:"Update preview",
@@ -129,6 +129,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
    <aside className="studio-sidebar">
     <section className="studio-panel"><div className="studio-panel-title"><span className="studio-panel-icon">▧</span><div><h3>{t.library}</h3><p>{t.libraryHint}</p></div></div>
      {images.length?<><div className="studio-image-picker">{images.map(image=><button type="button" key={image.id} className={`studio-image-option ${chosen.includes(image.id)?"is-chosen":""}`} onClick={()=>toggleImage(image.id)} aria-pressed={chosen.includes(image.id)} title={image.name}><img src={image.url} alt=""/><span>{chosen.includes(image.id)?"✓":"＋"}</span><small>{image.name}</small></button>)}</div><div className="studio-inline-actions"><button type="button" onClick={()=>{setChosen(images.map(image=>image.id));setPageIndex(1);}}>{t.addAll}</button><button type="button" onClick={()=>{setChosen([]);setPageIndex(1);}}>{t.clear}</button></div></>:<p className="studio-empty-hint">{t.empty}</p>}
+     {selectedImages.length>0&&<div className="studio-selected-order"><div className="studio-subheading">{t.order}</div>{selectedImages.map((image,index)=><div className="studio-order-row" key={image.id}><span>{index+1}</span><strong title={image.name}>{image.name}</strong><button type="button" disabled={index===0} title={t.up} aria-label={t.up} onClick={()=>setChosen(old=>{const next=[...old];[next[index-1],next[index]]=[next[index],next[index-1]];return next;})}>↑</button><button type="button" disabled={index===selectedImages.length-1} title={t.down} aria-label={t.down} onClick={()=>setChosen(old=>{const next=[...old];[next[index],next[index+1]]=[next[index+1],next[index]];return next;})}>↓</button></div>)}</div>}
     </section>
     <section className="studio-panel"><div className="studio-panel-title"><span className="studio-panel-icon">▦</span><div><h3>{t.templates}</h3><p>{t.reset}</p></div></div>
      <div className="template-grid">{templateModes.map((item,index)=><button key={item} type="button" onClick={()=>chooseMode(item)} className={`template-choice ${mode===item?"is-active":""}`} aria-pressed={mode===item}><span className={`template-glyph glyph-${index+1}`} aria-hidden="true"><i/><i/><i/></span><strong>{t[item==="two-horizontal"?"twoH":item==="two-vertical"?"twoV":item==="three-horizontal"?"threeH":item==="three-vertical"?"threeV":item]}</strong></button>)}</div>
