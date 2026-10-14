@@ -73,6 +73,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
 
 
  const selectedImages=useMemo(()=>chosen.map(id=>images.find(image=>image.id===id)).filter((image):image is StudioImage=>Boolean(image)),[chosen,images]);
+ useEffect(()=>{setChosen(current=>current.filter(id=>images.some(image=>image.id===id)));},[images]);
  const gridRows=mode==="two-vertical"?2:mode==="three-vertical"?3:mode==="single"?1:mode==="two-horizontal"?1:mode==="three-horizontal"?1:rows;
  const gridColumns=mode==="two-horizontal"?2:mode==="three-horizontal"?3:mode==="single"?1:mode==="two-vertical"?1:mode==="three-vertical"?1:columns;
  const settings:PaperSettings={size:size==="custom"?{preset:"custom",width:customWidth,height:customHeight}:{preset:size},orientation,unit,margins,gap};
@@ -123,7 +124,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  }
  function resetTemplate(){
   setMargins({top:8,right:8,bottom:8,left:8});setGap(4);setFit("contain");setRows(3);setColumns(3);setRepeat(false);setStickerSizeEnabled(false);setStickerWidth(45);setStickerHeight(45);
-  setCustomRegions([]);setStickerSizeEnabled(false);setPageIndex(1);
+  setCustomRegions([]);setCustomCount(2);setPageIndex(1);
  }
  function toggleImage(id:string){setChosen(old=>old.includes(id)?old.filter(item=>item!==id):[...old,id]);setPageIndex(1);}
 
