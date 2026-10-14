@@ -73,7 +73,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
 
 
  const selectedImages=useMemo(()=>chosen.map(id=>images.find(image=>image.id===id)).filter((image):image is StudioImage=>Boolean(image)),[chosen,images]);
- useEffect(()=>{setChosen(current=>current.filter(id=>images.some(image=>image.id===id)));},[images]);
+ useEffect(()=>{setChosen(current=>{const next=current.filter(id=>images.some(image=>image.id===id));return next.length===current.length?current:next;});},[images]);
  const gridRows=mode==="two-vertical"?2:mode==="three-vertical"?3:mode==="single"?1:mode==="two-horizontal"?1:mode==="three-horizontal"?1:rows;
  const gridColumns=mode==="two-horizontal"?2:mode==="three-horizontal"?3:mode==="single"?1:mode==="two-vertical"?1:mode==="three-vertical"?1:columns;
  const settings:PaperSettings={size:size==="custom"?{preset:"custom",width:customWidth,height:customHeight}:{preset:size},orientation,unit,margins,gap};
