@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { downloadBlob, makeOutputName, processImage, sha256, type OutputImageFormat, type ProcessedImage, type Rotation } from "./imageProcessing";
 
 export interface BatchLabImage { id: string; name: string; url: string; width: number; height: number; file: File }
@@ -25,6 +25,7 @@ export default function BatchLab({ images, locale }: { images: BatchLabImage[]; 
  const [duplicateGroups,setDuplicateGroups]=useState<string[][]>([]);
  const [duplicateScanDone,setDuplicateScanDone]=useState(false);
  const [scanBusy,setScanBusy]=useState(false);
+ useEffect(()=>{setSelected(old=>old.filter(id=>images.some(image=>image.id===id)));setOutputs([]);setDuplicateGroups([]);setDuplicateScanDone(false);},[images]);
  const selectedImages=useMemo(()=>selected.map(id=>images.find(image=>image.id===id)).filter((image):image is BatchLabImage=>Boolean(image)),[selected,images]);
  function toggle(id:string){setSelected(old=>old.includes(id)?old.filter(value=>value!==id):[...old,id]);setOutputs([]);setErrors({});setDuplicateScanDone(false);}
  function selectAll(){setSelected(old=>old.length===images.length?[]:images.map(image=>image.id));setOutputs([]);setDuplicateScanDone(false);}
