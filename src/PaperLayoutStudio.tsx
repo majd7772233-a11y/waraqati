@@ -89,8 +89,10 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   const pageWidth=dimensions.width/factor, pageHeight=dimensions.height/factor;
   const availableWidth=pageWidth-margins.left-margins.right, availableHeight=pageHeight-margins.top-margins.bottom;
   const safeWidth=Math.max(.1,stickerWidth),safeHeight=Math.max(.1,stickerHeight);
-  const fitColumns=Math.max(1,Math.min(20,Math.floor((availableWidth+gap)/(safeWidth+gap))));
-  const fitRows=Math.max(1,Math.min(20,Math.floor((availableHeight+gap)/(safeHeight+gap))));
+  if(availableWidth<safeWidth||availableHeight<safeHeight)return [];
+  const fitColumns=Math.min(20,Math.floor((availableWidth+gap)/(safeWidth+gap)));
+  const fitRows=Math.min(20,Math.floor((availableHeight+gap)/(safeHeight+gap)));
+  if(fitColumns<1||fitRows<1)return [];
   const totalWidth=fitColumns*safeWidth+(fitColumns-1)*gap;
   const startX=margins.left+Math.max(0,(availableWidth-totalWidth)/2);
   return Array.from({length:fitRows*fitColumns},(_,index)=>({id:`sticker-${index+1}`,x:startX+(index%fitColumns)*(safeWidth+gap),y:margins.top+Math.max(0,(availableHeight-(fitRows*safeHeight+(fitRows-1)*gap))/2)+Math.floor(index/fitColumns)*(safeHeight+gap),width:safeWidth,height:safeHeight}));
