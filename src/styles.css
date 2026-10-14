@@ -453,3 +453,8 @@ h1 { position: relative; max-width: 680px; font-size: clamp(44px,5.3vw,76px); li
 }
 .paper-preview-stage { cursor:grab; touch-action:none; }
 .paper-preview-stage:active { cursor:grabbing; }
+
+@media (min-width:761px) {
+ .studio-workspace[data-mobile-panel="assets"] .studio-template-panel,.studio-workspace[data-mobile-panel="assets"] .studio-properties-panel,.studio-workspace[data-mobile-panel="settings"] .studio-assets-panel { display:block; }
+ .studio-workspace[data-mobile-panel="assets"] .studio-preview-column,.studio-workspace[data-mobile-panel="settings"] .studio-preview-column { display:block; }
+}
