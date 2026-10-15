@@ -34,18 +34,24 @@ export default function App() {
  useEffect(()=>{
   folderInput.current?.setAttribute("webkitdirectory","");
   let cancelled=false;
-  void loadImageLibrary().then(stored=>{
-   if(cancelled)return;
-   const restored:LibraryImage[]=stored.map(item=>{
-    const file=new File([item.blob],item.name,{type:item.type,lastModified:item.lastModified});
-    const url=URL.createObjectURL(file);urls.current.push(url);
-    return {id:item.id,file,url,width:0,height:0};
-   });
-   const pending=restored.map(async image=>{
-    try{const bitmap=await createImageBitmap(image.file);image.width=bitmap.width;image.height=bitmap.height;bitmap.close();}catch{/* Preserve the file so the user can remove or re-import it. */}
-   });
-   void Promise.all(pending).then(()=>{if(!cancelled)setImages(restored);else restored.forEach(image=>URL.revokeObjectURL(image.url));});
-  }).catch(()=>{/* A fresh workspace is still usable if IndexedDB is unavailable. */}).finally(()=>{if(!cancelled)setLibraryHydrated(true);});
+  void (async()=>{
+   try{
+    const stored=await loadImageLibrary();
+    const restored:LibraryImage[]=stored.map(item=>{
+     const file=new File([item.blob],item.name,{type:item.type,lastModified:item.lastModified});
+     const url=URL.createObjectURL(file);urls.current.push(url);
+     return {id:item.id,file,url,width:0,height:0};
+    });
+    await Promise.all(restored.map(async image=>{
+     try{const bitmap=await createImageBitmap(image.file);image.width=bitmap.width;image.height=bitmap.height;bitmap.close();}catch{/* Keep unreadable files visible so they can be removed. */}
+    }));
+    if(cancelled){restored.forEach(image=>URL.revokeObjectURL(image.url));return;}
+    setImages(restored);
+    setLibraryHydrated(true);
+   }catch{
+    if(!cancelled)setError("Local image storage is unavailable. The current session can still be used, but images may not persist.");
+   }
+  })();
   return()=>{cancelled=true;urls.current.forEach(URL.revokeObjectURL);};
  },[]);
  useEffect(()=>{
