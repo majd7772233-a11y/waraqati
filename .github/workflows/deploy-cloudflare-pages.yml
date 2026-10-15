@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    name: Validate, build, and publish wrq.pages.dev
+    name: Validate, build, and publish wrq-bec.pages.dev
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -48,15 +48,16 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          command: pages deploy dist --project-name=wrq --branch=main --commit-hash=${{ github.sha }}
+          command: pages deploy dist --project-name=wrq-bec --branch=main --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Report deployment URL
+      - name: Report stable and deployment-specific URLs
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
+          echo "Stable production URL: https://wrq-bec.pages.dev" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$DEPLOYMENT_URL" ]; then
-            echo "Cloudflare Pages deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+            echo "This deployment's unique URL (for this version only): $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Deployment command completed, but Wrangler did not return a URL." >> "$GITHUB_STEP_SUMMARY"
+            echo "Deployment command completed, but Wrangler did not return a deployment-specific URL." >> "$GITHUB_STEP_SUMMARY"
           fi
