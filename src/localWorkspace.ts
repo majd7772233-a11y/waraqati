@@ -50,7 +50,7 @@ async function withStore<T>(storeName: string, mode: IDBTransactionMode, action:
   return new Promise<T>((resolve, reject) => {
     const transaction = db.transaction(storeName, mode);
     const request = action(transaction.objectStore(storeName));
-    let result: T;
+    let result = undefined as T;
     let requestSucceeded = false;
     let settled = false;
     const fail = (error: Error) => {
