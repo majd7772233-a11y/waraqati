@@ -36,4 +36,5 @@ jobs:
           test -s dist/index.html
           test -s dist/manifest.webmanifest
           test -s dist/sw.js
+          test -s dist/icon.svg
           grep -q 'manifest.webmanifest' dist/index.html
