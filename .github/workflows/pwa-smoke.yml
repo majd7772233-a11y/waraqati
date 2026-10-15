@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 20
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Build without running tests
         run: npx vite build
       - name: Verify production artifact and PWA paths
