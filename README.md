@@ -119,7 +119,7 @@ npm run build
 - **PWA Smoke Check:** `.github/workflows/pwa-smoke.yml` — فحص manifest وService Worker بعد البناء.
 - **CI:** `.github/workflows/ci.yml` — فحص أساسي شامل يدوي.
 
-أُضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع Cloudflare Pages باسم `wrq` مرة واحدة، و`.github/workflows/deploy-cloudflare-pages.yml` لبناء الموقع وفحصه ثم نشره يدويًا إلى `https://wrq.pages.dev`. شغّل Workflow الإعداد مرة واحدة فقط إذا لم يكن المشروع موجودًا، ولا تعِد تشغيله بعد إنشاء المشروع؛ استخدم Workflow النشر عند الحاجة. يبقى `.github/workflows/deploy-pages.yml` خيارًا احتياطيًا لـ GitHub Pages؛ لا تشغّله عند اعتماد Cloudflare. جميع الـ workflows يدوية فقط عبر `workflow_dispatch`.
+أُضيف `.github/workflows/setup-cloudflare-pages.yml` كخيار إعداد يدوي، لكن Workflow النشر `.github/workflows/deploy-cloudflare-pages.yml` أصبح يتحقق من وجود مشروع Cloudflare Pages باسم `wrq` وينشئه تلقائيًا عند غيابه، ثم ينشر إليه. شغّل Workflow النشر مباشرة من `main`؛ لا يحتاج المستخدم إلى تشغيل Workflow الإعداد منفصلًا. يبقى `.github/workflows/deploy-pages.yml` خيارًا احتياطيًا لـ GitHub Pages؛ لا تشغّله عند اعتماد Cloudflare. جميع الـ workflows يدوية فقط عبر `workflow_dispatch`.
 
 
 ## المرحلة العاشرة — صقل الإطلاق (قيد التنفيذ)
@@ -139,4 +139,4 @@ npm run build
 
 - الرابط الثابت للموقع: https://wrq.pages.dev
 - قد يعرض Wrangler رابطًا فريدًا بصيغة `<deployment-id>.wrq.pages.dev` لنشر محدد؛ استخدم الرابط الثابت أعلاه للاستخدام والمشاركة المعتادة.
-- اسم المشروع المعتمد في لوحة Cloudflare هو `wrq`، والرابط الثابت المطلوب هو `https://wrq.pages.dev`. رابط النشر الخاص قد يحتوي معرّفًا قبل اسم المشروع.
+- الاسم المطلوب للمشروع هو `wrq` والرابط الثابت المطلوب هو `https://wrq.pages.dev`. اسم نطاق `pages.dev` مرتبط باسم مشروع Cloudflare ولا يمكن تغييره لمشروع موجود؛ لذلك ينشئ Workflow مشروعًا جديدًا باسم `wrq` إن لم يكن موجودًا، ولا يغيّر أو يحذف المشروع القديم `wrq-bec`.
