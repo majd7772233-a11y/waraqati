@@ -59,7 +59,11 @@ if (indexPath && manifestPath && workerPath && iconPath) {
     .filter(value => /\.(?:js|css|webmanifest|svg)(?:\?.*)?$/i.test(value));
   if (!references.some(value => value.endsWith(".js"))) fail("no JavaScript entry reference found in index.html");
   for (const reference of references) {
-    if (/^(?:https?:)?\/\//i.test(reference) || reference.startsWith("/")) continue;
+    if (/^(?:https?:)?\/\//i.test(reference)) continue;
+    if (reference.startsWith("/")) {
+      fail(`root-relative asset path is not safe for GitHub Pages project deployments: ${reference}`);
+      continue;
+    }
     const clean = decodeURIComponent(reference.split("?")[0]).replace(/^\.\//, "");
     if (!(await requireFile(clean))) fail(`index.html asset cannot be resolved: ${reference}`);
   }
