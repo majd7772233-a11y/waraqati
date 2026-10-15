@@ -146,9 +146,9 @@ jobs:
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/wrq" \
             -o /tmp/wrq-project-final.json
-          jq -e '.success == true and .result.name == "wrq"' /tmp/wrq-project-final.json >/dev/null || {
+          jq -e '.success == true and .result.name == "wrq" and .result.subdomain == "wrq.pages.dev"' /tmp/wrq-project-final.json >/dev/null || {
             cat /tmp/wrq-project-final.json
-            echo "Cloudflare API did not confirm the exact project name 'wrq'."
+            echo "Cloudflare API did not confirm project wrq with hostname wrq.pages.dev."
             exit 1
           }
           echo "Cloudflare project metadata confirms wrq. Stable URL: https://wrq.pages.dev" >> "$GITHUB_STEP_SUMMARY"
