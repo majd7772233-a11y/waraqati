@@ -119,7 +119,7 @@ npm run build
 - **PWA Smoke Check:** `.github/workflows/pwa-smoke.yml` — فحص manifest وService Worker بعد البناء.
 - **CI:** `.github/workflows/ci.yml` — فحص أساسي شامل يدوي.
 
-أُضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع Cloudflare Pages باسم `wrq-bec` مرة واحدة، و`.github/workflows/deploy-cloudflare-pages.yml` لبناء الموقع وفحصه ثم نشره يدويًا إلى `wrq.pages.dev`. شغّل Workflow الإعداد مرة واحدة فقط إذا لم يكن المشروع موجودًا، ثم استخدم Workflow النشر عند الحاجة. يبقى `.github/workflows/deploy-pages.yml` خيارًا احتياطيًا لـ GitHub Pages؛ لا تشغّله عند اعتماد Cloudflare. جميع الـ workflows يدوية فقط عبر `workflow_dispatch`.
+أُضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع Cloudflare Pages باسم `wrq-bec` مرة واحدة، و`.github/workflows/deploy-cloudflare-pages.yml` لبناء الموقع وفحصه ثم نشره يدويًا إلى `https://wrq-bec.pages.dev`. شغّل Workflow الإعداد مرة واحدة فقط إذا لم يكن المشروع موجودًا، ولا تعِد تشغيله بعد إنشاء المشروع؛ استخدم Workflow النشر عند الحاجة. يبقى `.github/workflows/deploy-pages.yml` خيارًا احتياطيًا لـ GitHub Pages؛ لا تشغّله عند اعتماد Cloudflare. جميع الـ workflows يدوية فقط عبر `workflow_dispatch`.
 
 
 ## المرحلة العاشرة — صقل الإطلاق (قيد التنفيذ)
@@ -127,7 +127,7 @@ npm run build
 - أضيفت اختبارات انحدار لمحرك التخطيط: مقاسات الورق والتحويل بين الوحدات، تناسب الصور في contain/cover، توزيع الصور الزائدة على صفحات متعددة، والخانات الفارغة والمدخلات غير الصالحة.
 - أضيفت اختبارات لحماية استيراد الصور من تصنيف الملفات غير الصورية، وللتعامل مع ZIP غير صالح.
 - أضيف `scripts/verify-dist.mjs` للتحقق من وجود ملفات PWA الأساسية، وصحة manifest، ووجود ملفات JS/CSS، وحل مسارات الأصول النسبية المناسبة للاستضافة الثابتة.
-- أضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع `wrq-bec` يدويًا، و`.github/workflows/deploy-cloudflare-pages.yml` لتثبيت الاعتماديات وفحص TypeScript والاختبارات والبناء والتحقق من مخرجات الإنتاج ثم النشر إلى Cloudflare Pages. بقي تشغيل النشر الفعلي مطلوبًا.
+- أضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع `wrq-bec` يدويًا، و`.github/workflows/deploy-cloudflare-pages.yml` لتثبيت الاعتماديات وفحص TypeScript والاختبارات والبناء والتحقق من مخرجات الإنتاج ثم النشر إلى Cloudflare Pages. تم تشغيل Workflow النشر بنجاح وظهر رابط خاص بالنشر؛ ما زال يلزم تأكيد الوصول إلى الرابط الثابت `https://wrq-bec.pages.dev`.
 - حسّن التعامل مع تعذر `localStorage` حتى لا يمنع تشغيل التطبيق أو تبديل اللغة، وصارت رسالة تعذر استعادة مكتبة الصور مترجمة للعربية والإنجليزية.
 - عمليات IndexedDB العامة تنتظر اكتمال المعاملة قبل إرجاع نتيجة ناجحة؛ هذا تحسين للاعتمادية وليس إثباتًا لسلامة التخزين حتى تُشغّل الاختبارات.
 - **القيود المعروفة:** التخزين مرتبط بالمتصفح وحصته؛ ملفات JSON لا تتضمن بيانات الصور نفسها؛ العمل دون اتصال يتطلب زيارة ناجحة سابقة وتخزين موارد التطبيق؛ دعم صيغ الصور يتوقف على فك الترميز في المتصفح؛ PDF الناتج نقطي بخلفية بيضاء، وقد تُرفض عمليات التصدير الكبيرة لحماية الذاكرة.
