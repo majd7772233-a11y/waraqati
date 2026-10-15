@@ -1,0 +1,29 @@
+name: PWA Smoke Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pwa:
+    name: Verify install and offline assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build without running tests
+        run: npx vite build
+      - name: Validate manifest and service worker
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('dist/manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !m.scope) process.exit(1);"
+          test -s dist/sw.js
+          grep -q 'serviceWorker' src/main.tsx
