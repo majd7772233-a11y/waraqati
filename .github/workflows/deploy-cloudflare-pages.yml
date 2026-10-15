@@ -80,7 +80,7 @@ jobs:
               STATUS="$(curl -sS -o /tmp/wrq-rename.json -w '%{http_code}' \
                 -X PATCH "${API}/wrq" \
                 -H "${AUTH}" -H "Content-Type: application/json" \
-                --data "{\"name\":\"\${LEGACY_NAME}\",\"production_branch\":\"main\"}")"
+                --data "{\"name\":\"${LEGACY_NAME}\",\"production_branch\":\"main\"}")"
               if [ "${STATUS}" -lt 200 ] || [ "${STATUS}" -ge 300 ] || ! jq -e '.success == true and .result.name == $n' --arg n "${LEGACY_NAME}" /tmp/wrq-rename.json >/dev/null; then
                 cat /tmp/wrq-rename.json
                 echo "Could not safely rename the legacy project. Nothing was deleted; stopping."
