@@ -9,7 +9,7 @@ self.addEventListener("install", event => {
     const shell = await cache.match(APP_ROOT);
     if (shell) {
       const html = await shell.text();
-      const assetPaths = [...html.matchAll(/(?:src|href)="([^"]+\\.(?:js|css|webmanifest)(?:\\?[^"]*)?)"/g)].map(match => new URL(match[1], APP_ROOT).toString());
+      const assetPaths = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css|webmanifest)(?:\?[^"]*)?)"/g)].map(match => new URL(match[1], APP_ROOT).toString());
       await Promise.all(assetPaths.map(async asset => {
         try { await cache.add(asset); } catch { /* One optional asset must not prevent installation. */ }
       }));
