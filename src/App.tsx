@@ -12,7 +12,7 @@ interface ImportSummary { accepted: number; unsupported: number; damaged: number
 const toolIcons = ["▦", "✳", "▧", "⌘"];
 
 export default function App() {
- const [locale,setLocale]=useState<Locale>(()=>window.localStorage.getItem("waraqati-locale")==="en"?"en":"ar");
+ const [locale,setLocale]=useState<Locale>(()=>{try{return window.localStorage.getItem("waraqati-locale")==="en"?"en":"ar";}catch{return "ar";}});
  const [images,setImages]=useState<LibraryImage[]>([]);
  const [libraryHydrated,setLibraryHydrated]=useState(false);
  const [libraryStorageReady,setLibraryStorageReady]=useState(false);
@@ -31,7 +31,7 @@ export default function App() {
  const studioImages=useMemo(()=>images.map(image=>({id:image.id,name:image.file.name,url:image.url,width:image.width,height:image.height})),[images]);
  const batchImages=useMemo(()=>images.map(image=>({id:image.id,name:image.file.name,url:image.url,width:image.width,height:image.height,file:image.file})),[images]);
 
- useEffect(()=>{document.documentElement.lang=locale;document.documentElement.dir=direction;window.localStorage.setItem("waraqati-locale",locale);},[locale,direction]);
+ useEffect(()=>{document.documentElement.lang=locale;document.documentElement.dir=direction;try{window.localStorage.setItem("waraqati-locale",locale);}catch{/* Language selection still works for this session when storage is blocked. */}},[locale,direction]);
  useEffect(()=>{
   folderInput.current?.setAttribute("webkitdirectory","");
   let cancelled=false;
@@ -51,7 +51,7 @@ export default function App() {
     setLibraryStorageReady(true);
     setLibraryHydrated(true);
    }catch{
-    if(!cancelled){setError("Local image storage is unavailable. The current session can still be used, but images may not persist.");setLibraryHydrated(true);}
+    if(!cancelled){setError(locale==="ar"?"التخزين المحلي للصور غير متاح. يمكنك متابعة العمل في هذه الجلسة، لكن قد لا تُحفظ الصور بعد إغلاق التطبيق.":"Local image storage is unavailable. You can keep working in this session, but images may not persist after closing the app.");setLibraryHydrated(true);}
    }
   })();
   return()=>{cancelled=true;urls.current.forEach(URL.revokeObjectURL);};
