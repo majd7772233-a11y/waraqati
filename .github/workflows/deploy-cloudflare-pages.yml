@@ -151,4 +151,9 @@ jobs:
             echo "Cloudflare API did not confirm project wrq with hostname wrq.pages.dev."
             exit 1
           }
-          echo "Cloudflare project metadata confirms wrq. Stable URL: https://wrq.pages.dev" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsS --retry 5 --retry-delay 2 "https://wrq.pages.dev/" -o /tmp/wrq-homepage.html
+          grep -qi '<html' /tmp/wrq-homepage.html || {
+            echo "The stable hostname did not serve HTML."
+            exit 1
+          }
+          echo "Cloudflare API and live HTTP check confirm https://wrq.pages.dev" >> "$GITHUB_STEP_SUMMARY"
