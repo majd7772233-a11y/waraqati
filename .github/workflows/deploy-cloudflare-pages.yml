@@ -1,0 +1,62 @@
+name: Deploy Waraqati to Cloudflare Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: cloudflare-pages-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Validate, build, and publish wrq.pages.dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript checks
+        run: npm run check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Verify production artifact and relative paths
+        run: node scripts/verify-dist.mjs
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: pages deploy dist --project-name=wrq --branch=main --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report deployment URL
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          if [ -n "$DEPLOYMENT_URL" ]; then
+            echo "Cloudflare Pages deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Deployment command completed, but Wrangler did not return a URL." >> "$GITHUB_STEP_SUMMARY"
+          fi
