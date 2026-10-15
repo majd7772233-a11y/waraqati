@@ -26,7 +26,7 @@
 - المستودع: `majd7772233-a11y/waraqati`
 - الاتجاه البصري: هوية ليلية عميقة، ولمسات بنفسجية ونعناعية، وGlassmorphism متعدد الطبقات، ومساحة معاينة تشبه الاستوديو.
 - التقنية: React 18 وTypeScript وVite 6.
-- الاستضافة المعتمدة: Cloudflare Pages على `https://wrq-bec.pages.dev`، مع إبقاء GitHub Pages خيارًا احتياطيًا يدويًا.
+- الاستضافة المعتمدة: Cloudflare Pages على `https://wrq.pages.dev`، مع إبقاء GitHub Pages خيارًا احتياطيًا يدويًا.
 
 ## مبادئ أساسية
 
@@ -119,7 +119,7 @@ npm run build
 - **PWA Smoke Check:** `.github/workflows/pwa-smoke.yml` — فحص manifest وService Worker بعد البناء.
 - **CI:** `.github/workflows/ci.yml` — فحص أساسي شامل يدوي.
 
-أُضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع Cloudflare Pages باسم `wrq-bec` مرة واحدة، و`.github/workflows/deploy-cloudflare-pages.yml` لبناء الموقع وفحصه ثم نشره يدويًا إلى `https://wrq-bec.pages.dev`. شغّل Workflow الإعداد مرة واحدة فقط إذا لم يكن المشروع موجودًا، ولا تعِد تشغيله بعد إنشاء المشروع؛ استخدم Workflow النشر عند الحاجة. يبقى `.github/workflows/deploy-pages.yml` خيارًا احتياطيًا لـ GitHub Pages؛ لا تشغّله عند اعتماد Cloudflare. جميع الـ workflows يدوية فقط عبر `workflow_dispatch`.
+أُضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع Cloudflare Pages باسم `wrq` مرة واحدة، و`.github/workflows/deploy-cloudflare-pages.yml` لبناء الموقع وفحصه ثم نشره يدويًا إلى `https://wrq.pages.dev`. شغّل Workflow الإعداد مرة واحدة فقط إذا لم يكن المشروع موجودًا، ولا تعِد تشغيله بعد إنشاء المشروع؛ استخدم Workflow النشر عند الحاجة. يبقى `.github/workflows/deploy-pages.yml` خيارًا احتياطيًا لـ GitHub Pages؛ لا تشغّله عند اعتماد Cloudflare. جميع الـ workflows يدوية فقط عبر `workflow_dispatch`.
 
 
 ## المرحلة العاشرة — صقل الإطلاق (قيد التنفيذ)
@@ -127,7 +127,7 @@ npm run build
 - أضيفت اختبارات انحدار لمحرك التخطيط: مقاسات الورق والتحويل بين الوحدات، تناسب الصور في contain/cover، توزيع الصور الزائدة على صفحات متعددة، والخانات الفارغة والمدخلات غير الصالحة.
 - أضيفت اختبارات لحماية استيراد الصور من تصنيف الملفات غير الصورية، وللتعامل مع ZIP غير صالح.
 - أضيف `scripts/verify-dist.mjs` للتحقق من وجود ملفات PWA الأساسية، وصحة manifest، ووجود ملفات JS/CSS، وحل مسارات الأصول النسبية المناسبة للاستضافة الثابتة.
-- أضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع `wrq-bec` يدويًا، و`.github/workflows/deploy-cloudflare-pages.yml` لتثبيت الاعتماديات وفحص TypeScript والاختبارات والبناء والتحقق من مخرجات الإنتاج ثم النشر إلى Cloudflare Pages. تم تشغيل Workflow النشر بنجاح وظهر رابط خاص بالنشر؛ ما زال يلزم تأكيد الوصول إلى الرابط الثابت `https://wrq-bec.pages.dev`.
+- أضيف `.github/workflows/setup-cloudflare-pages.yml` لإنشاء مشروع `wrq` يدويًا، و`.github/workflows/deploy-cloudflare-pages.yml` لتثبيت الاعتماديات وفحص TypeScript والاختبارات والبناء والتحقق من مخرجات الإنتاج ثم النشر إلى Cloudflare Pages. تم تشغيل Workflow النشر بنجاح وظهر رابط خاص بالنشر؛ ما زال يلزم تأكيد الوصول إلى الرابط الثابت `https://wrq.pages.dev`.
 - حسّن التعامل مع تعذر `localStorage` حتى لا يمنع تشغيل التطبيق أو تبديل اللغة، وصارت رسالة تعذر استعادة مكتبة الصور مترجمة للعربية والإنجليزية.
 - عمليات IndexedDB العامة تنتظر اكتمال المعاملة قبل إرجاع نتيجة ناجحة؛ هذا تحسين للاعتمادية وليس إثباتًا لسلامة التخزين حتى تُشغّل الاختبارات.
 - **القيود المعروفة:** التخزين مرتبط بالمتصفح وحصته؛ ملفات JSON لا تتضمن بيانات الصور نفسها؛ العمل دون اتصال يتطلب زيارة ناجحة سابقة وتخزين موارد التطبيق؛ دعم صيغ الصور يتوقف على فك الترميز في المتصفح؛ PDF الناتج نقطي بخلفية بيضاء، وقد تُرفض عمليات التصدير الكبيرة لحماية الذاكرة.
@@ -137,6 +137,6 @@ npm run build
 
 ### رابط النشر المعتمد
 
-- الرابط الثابت للموقع: https://wrq-bec.pages.dev
-- قد يعرض Wrangler رابطًا فريدًا بصيغة `<deployment-id>.wrq-bec.pages.dev` لنشر محدد؛ استخدم الرابط الثابت أعلاه للاستخدام والمشاركة المعتادة.
-- نطاق `wrq.pages.dev` لم يُعتمد؛ نطاق Pages يتبع اسم المشروع الفعلي ولا يمكن تغييره بعد إنشائه دون حذف المشروع وإنشاء آخر باسم متاح.
+- الرابط الثابت للموقع: https://wrq.pages.dev
+- قد يعرض Wrangler رابطًا فريدًا بصيغة `<deployment-id>.wrq.pages.dev` لنشر محدد؛ استخدم الرابط الثابت أعلاه للاستخدام والمشاركة المعتادة.
+- اسم المشروع المعتمد في لوحة Cloudflare هو `wrq`، والرابط الثابت المطلوب هو `https://wrq.pages.dev`. رابط النشر الخاص قد يحتوي معرّفًا قبل اسم المشروع.
