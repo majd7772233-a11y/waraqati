@@ -10,5 +10,8 @@
   "display": "standalone",
   "background_color": "#10101b",
   "theme_color": "#10101b",
-  "categories": ["photo", "productivity", "utilities"]
+  "categories": ["photo", "productivity", "utilities"],
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
 }
