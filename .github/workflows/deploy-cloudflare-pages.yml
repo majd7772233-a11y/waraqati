@@ -41,45 +41,74 @@ jobs:
       - name: Verify production artifact and relative paths
         run: node scripts/verify-dist.mjs
 
-      # Verify the actual project list, not just HTTP 200 from /projects/wrq.
-      # Cloudflare previously returned a wrq-bec.pages.dev deployment for the
-      # wrq deployment command, so the exact project name must be confirmed.
-      - name: Ensure the exact Cloudflare Pages project exists
+      # A Pages project's *.pages.dev subdomain is immutable. If the project
+      # called "wrq" still owns the old wrq-bec.pages.dev hostname, rename that
+      # legacy project (without deleting it) and create a genuinely new "wrq".
+      - name: Ensure wrq.pages.dev is backed by a fresh Pages project
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"
-          curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}" -o /tmp/pages-projects.json
-          if ! jq -e '.success == true and (.result | type == "array")' /tmp/pages-projects.json >/dev/null; then
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          curl -fsS -H "${AUTH}" "${API}" -o /tmp/pages-projects.json
+          jq -e '.success == true and (.result | type == "array")' /tmp/pages-projects.json >/dev/null || {
             cat /tmp/pages-projects.json
             echo "Cloudflare did not return a valid Pages project list."
             exit 1
+          }
+
+          WRQ_COUNT="$(jq '[.result[] | select(.name == "wrq")] | length' /tmp/pages-projects.json)"
+          if [ "${WRQ_COUNT}" -gt 1 ]; then
+            echo "Cloudflare returned duplicate projects named wrq; refusing to make changes."
+            exit 1
           fi
 
-          if ! jq -e '[.result[] | select(.name == "wrq")] | length == 1' /tmp/pages-projects.json >/dev/null; then
-            echo "The exact project 'wrq' is absent. Creating it without changing or deleting wrq-bec."
-            CREATE_STATUS="$(curl -sS -o /tmp/wrq-create.json -w '%{http_code}' \
-              -X POST "${API}" \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-              -H "Content-Type: application/json" \
+          if [ "${WRQ_COUNT}" -eq 1 ]; then
+            SUBDOMAIN="$(jq -r '.result[] | select(.name == "wrq") | .subdomain // ""' /tmp/pages-projects.json)"
+            echo "Existing project wrq has immutable subdomain: ${SUBDOMAIN}"
+            if [ "${SUBDOMAIN}" != "wrq.pages.dev" ]; then
+              # Keep the existing project and its immutable old hostname. Only
+              # rename its project identifier so the desired name can be recreated.
+              LEGACY_NAME="wrq-legacy-${GITHUB_RUN_ID}"
+              if jq -e --arg n "${LEGACY_NAME}" '[.result[] | select(.name == $n)] | length > 0' /tmp/pages-projects.json >/dev/null; then
+                echo "Legacy project name ${LEGACY_NAME} already exists; refusing to overwrite it."
+                exit 1
+              fi
+              echo "Preserving the existing deployment; moving project identifier to ${LEGACY_NAME}."
+              STATUS="$(curl -sS -o /tmp/wrq-rename.json -w '%{http_code}' \
+                -X PATCH "${API}/wrq" \
+                -H "${AUTH}" -H "Content-Type: application/json" \
+                --data "{\"name\":\"\${LEGACY_NAME}\",\"production_branch\":\"main\"}")"
+              if [ "${STATUS}" -lt 200 ] || [ "${STATUS}" -ge 300 ] || ! jq -e '.success == true and .result.name == $n' --arg n "${LEGACY_NAME}" /tmp/wrq-rename.json >/dev/null; then
+                cat /tmp/wrq-rename.json
+                echo "Could not safely rename the legacy project. Nothing was deleted; stopping."
+                exit 1
+              fi
+            fi
+          fi
+
+          # Create the desired hostname only after freeing the project name.
+          curl -fsS -H "${AUTH}" "${API}" -o /tmp/pages-projects-current.json
+          if ! jq -e '[.result[] | select(.name == "wrq")] | length == 1' /tmp/pages-projects-current.json >/dev/null; then
+            STATUS="$(curl -sS -o /tmp/wrq-create.json -w '%{http_code}' \
+              -X POST "${API}" -H "${AUTH}" -H "Content-Type: application/json" \
               --data '{"name":"wrq","production_branch":"main"}')"
-            if [ "${CREATE_STATUS}" -lt 200 ] || [ "${CREATE_STATUS}" -ge 300 ] || ! jq -e '.success == true and .result.name == "wrq"' /tmp/wrq-create.json >/dev/null; then
+            if [ "${STATUS}" -lt 200 ] || [ "${STATUS}" -ge 300 ] || ! jq -e '.success == true and .result.name == "wrq" and .result.subdomain == "wrq.pages.dev"' /tmp/wrq-create.json >/dev/null; then
               cat /tmp/wrq-create.json
-              echo "Could not create the exact project 'wrq'. The Cloudflare token needs Pages Write permission, and the account ID must be correct."
+              echo "Could not create a fresh project with the exact wrq.pages.dev hostname."
               exit 1
             fi
           fi
 
-          # Re-read and validate the exact project name before allowing deployment.
-          curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}" -o /tmp/pages-projects-final.json
-          jq -e '.success == true and ([.result[] | select(.name == "wrq")] | length == 1)' /tmp/pages-projects-final.json >/dev/null || {
-            cat /tmp/pages-projects-final.json
-            echo "Cloudflare still does not expose exactly one Pages project named 'wrq'; refusing to deploy to a different hostname."
+          curl -fsS -H "${AUTH}" "${API}/wrq" -o /tmp/wrq-project.json
+          jq -e '.success == true and .result.name == "wrq" and .result.subdomain == "wrq.pages.dev"' /tmp/wrq-project.json >/dev/null || {
+            cat /tmp/wrq-project.json
+            echo "Cloudflare did not confirm subdomain wrq.pages.dev; refusing to deploy."
             exit 1
           }
-          echo "Verified exact Cloudflare Pages project: wrq"
+          echo "Confirmed exact project and immutable hostname: wrq.pages.dev"
 
       - name: Deploy to Cloudflare Pages
         id: deploy
