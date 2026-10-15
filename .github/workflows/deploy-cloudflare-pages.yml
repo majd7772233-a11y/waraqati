@@ -41,38 +41,45 @@ jobs:
       - name: Verify production artifact and relative paths
         run: node scripts/verify-dist.mjs
 
-      # A Pages subdomain is tied to the project created in Cloudflare.
-      # Ensure the exact target exists before deploying; never deploy to wrq-bec.
+      # Verify the actual project list, not just HTTP 200 from /projects/wrq.
+      # Cloudflare previously returned a wrq-bec.pages.dev deployment for the
+      # wrq deployment command, so the exact project name must be confirmed.
       - name: Ensure the exact Cloudflare Pages project exists
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/wrq"
-          STATUS="$(curl -sS -o /tmp/wrq-project.json -w '%{http_code}' \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            "${API}")"
+          API="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"
+          curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}" -o /tmp/pages-projects.json
+          if ! jq -e '.success == true and (.result | type == "array")' /tmp/pages-projects.json >/dev/null; then
+            cat /tmp/pages-projects.json
+            echo "Cloudflare did not return a valid Pages project list."
+            exit 1
+          fi
 
-          if [ "${STATUS}" = "200" ]; then
-            echo "Cloudflare Pages project 'wrq' already exists."
-          elif [ "${STATUS}" = "404" ]; then
-            echo "Project 'wrq' is missing; creating the exact requested project."
+          if ! jq -e '[.result[] | select(.name == "wrq")] | length == 1' /tmp/pages-projects.json >/dev/null; then
+            echo "The exact project 'wrq' is absent. Creating it without changing or deleting wrq-bec."
             CREATE_STATUS="$(curl -sS -o /tmp/wrq-create.json -w '%{http_code}' \
-              -X POST "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects" \
+              -X POST "${API}" \
               -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
               -H "Content-Type: application/json" \
               --data '{"name":"wrq","production_branch":"main"}')"
-            if [ "${CREATE_STATUS}" -lt 200 ] || [ "${CREATE_STATUS}" -ge 300 ] || ! jq -e '.success == true' /tmp/wrq-create.json >/dev/null; then
+            if [ "${CREATE_STATUS}" -lt 200 ] || [ "${CREATE_STATUS}" -ge 300 ] || ! jq -e '.success == true and .result.name == "wrq"' /tmp/wrq-create.json >/dev/null; then
               cat /tmp/wrq-create.json
-              echo "Could not create Cloudflare Pages project 'wrq'. Check the token's Pages Write permission and account ID."
+              echo "Could not create the exact project 'wrq'. The Cloudflare token needs Pages Write permission, and the account ID must be correct."
               exit 1
             fi
-          else
-            cat /tmp/wrq-project.json
-            echo "Could not verify project 'wrq' (Cloudflare API HTTP ${STATUS}); refusing to deploy to any other project."
-            exit 1
           fi
+
+          # Re-read and validate the exact project name before allowing deployment.
+          curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${API}" -o /tmp/pages-projects-final.json
+          jq -e '.success == true and ([.result[] | select(.name == "wrq")] | length == 1)' /tmp/pages-projects-final.json >/dev/null || {
+            cat /tmp/pages-projects-final.json
+            echo "Cloudflare still does not expose exactly one Pages project named 'wrq'; refusing to deploy to a different hostname."
+            exit 1
+          }
+          echo "Verified exact Cloudflare Pages project: wrq"
 
       - name: Deploy to Cloudflare Pages
         id: deploy
@@ -84,23 +91,35 @@ jobs:
           command: pages deploy dist --project-name=wrq --branch=main --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify the deployment URL targets wrq
+      - name: Verify deployment URL and stable production hostname
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           echo "Required stable production URL: https://wrq.pages.dev" >> "$GITHUB_STEP_SUMMARY"
-          if [ -n "${DEPLOYMENT_URL}" ]; then
-            echo "Deployment URL reported by Wrangler: ${DEPLOYMENT_URL}" >> "$GITHUB_STEP_SUMMARY"
-            case "${DEPLOYMENT_URL}" in
-              https://*.wrq.pages.dev|https://wrq.pages.dev)
-                ;;
-              *)
-                echo "Unexpected deployment URL. Expected the project hostname to end in .wrq.pages.dev; inspect the Cloudflare account and deployment details." >> "$GITHUB_STEP_SUMMARY"
-                echo "Unexpected deployment URL: ${DEPLOYMENT_URL}"
-                exit 1
-                ;;
-            esac
-          else
-            echo "Wrangler did not return a deployment-specific URL. Check the Cloudflare Pages project 'wrq' directly." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "Deployment URL reported by Wrangler: ${DEPLOYMENT_URL:-<empty>}" >> "$GITHUB_STEP_SUMMARY"
+
+          # The deployment-specific URL must belong to the wrq project.
+          case "${DEPLOYMENT_URL:-}" in
+            https://*.wrq.pages.dev|https://wrq.pages.dev)
+              ;;
+            *)
+              echo "Wrangler deployed to an unexpected hostname: ${DEPLOYMENT_URL:-<empty>}"
+              echo "Expected a deployment URL under wrq.pages.dev. The stable hostname has NOT been verified."
+              exit 1
+              ;;
+          esac
+
+          # Verify Cloudflare's production project details, not just the Wrangler output.
+          curl -fsS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/wrq" \
+            -o /tmp/wrq-project-final.json
+          jq -e '.success == true and .result.name == "wrq"' /tmp/wrq-project-final.json >/dev/null || {
+            cat /tmp/wrq-project-final.json
+            echo "Cloudflare API did not confirm the exact project name 'wrq'."
+            exit 1
+          }
+          echo "Cloudflare project metadata confirms wrq. Stable URL: https://wrq.pages.dev" >> "$GITHUB_STEP_SUMMARY"
