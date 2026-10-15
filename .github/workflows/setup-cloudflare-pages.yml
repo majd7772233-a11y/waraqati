@@ -1,0 +1,21 @@
+name: Set Up Cloudflare Pages Project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  create-project:
+    name: Create the wrq Pages project
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Create Cloudflare Pages project
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: pages project create wrq --production-branch=main
