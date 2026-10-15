@@ -1,0 +1,39 @@
+name: Final Quality Checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: waraqati-final-quality
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: TypeScript, tests, production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript checks
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Verify built app shell and PWA assets
+        run: |
+          test -s dist/index.html
+          test -s dist/manifest.webmanifest
+          test -s dist/sw.js
+          grep -q 'manifest.webmanifest' dist/index.html
