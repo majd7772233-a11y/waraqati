@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   create-project:
-    name: Create the wrq Pages project
+    name: Create the wrq-bec Pages project
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,4 +18,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          command: pages project create wrq --production-branch=main
+          command: pages project create wrq-bec --production-branch=main
