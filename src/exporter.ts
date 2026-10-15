@@ -1,4 +1,4 @@
-import type { LayoutPage, LayoutResult, LayoutSlot } from "./paperLayout";
+import type { LayoutPage, LayoutResult } from "./paperLayout";
 
 export type ExportFormat = "png" | "jpeg";
 export type ExportBackground = "white" | "transparent";
