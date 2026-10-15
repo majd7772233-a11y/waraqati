@@ -40,7 +40,7 @@ if (indexPath && manifestPath && workerPath && iconPath) {
       if (typeof manifest[field] !== "string" || !manifest[field].trim()) fail(`manifest field ${field} is missing`);
     }
     if (manifest.start_url?.startsWith("/") || manifest.scope?.startsWith("/")) {
-      fail("manifest start_url and scope must remain relative for GitHub Pages project paths");
+      fail("manifest start_url and scope must remain relative for static hosting");
     }
     if (!Array.isArray(manifest.icons) || !manifest.icons.some(icon => icon.src === "./icon.svg")) {
       fail("manifest must reference the shipped SVG app icon");
@@ -61,7 +61,7 @@ if (indexPath && manifestPath && workerPath && iconPath) {
   for (const reference of references) {
     if (/^(?:https?:)?\/\//i.test(reference)) continue;
     if (reference.startsWith("/")) {
-      fail(`root-relative asset path is not safe for GitHub Pages project deployments: ${reference}`);
+      fail(`root-relative asset path is not safe for relative-path static deployments: ${reference}`);
       continue;
     }
     const clean = decodeURIComponent(reference.split("?")[0]).replace(/^\.\//, "");
