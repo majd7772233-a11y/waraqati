@@ -7,8 +7,8 @@ type PaperPreset = "4x6" | "5x7" | "A4" | "custom";
 interface RenderedPage { blob: Blob; filename: string; width: number; height: number }
 
 const copy = {
- ar: { kicker:"04 / استوديو الصور", title:"اصنع ورقة صورك بطريقتك.", subtitle:"أوراق Contact Sheet، صور شخصية، وتسميات اختيارية — كل شيء محلي داخل المتصفح.", select:"صور المكتبة", all:"تحديد الكل", clear:"إلغاء التحديد", preset:"مقاس الورقة", custom:"مخصص", width:"العرض (مم)", height:"الارتفاع (مم)", portrait:"صور شخصية", sheet:"Contact Sheet", cols:"الأعمدة", rows:"الصفوف", gap:"المسافة (مم)", margin:"الهامش (مم)", dpi:"الدقة", labels:"إظهار أسماء الصور", numbers:"إضافة أرقام", titleLabel:"عنوان الورقة", titlePlaceholder:"ذكريات جميلة", generate:"إنشاء معاينة الورقة", render:"جارٍ إنشاء الصفحات…", download:"تنزيل كل الصفحات", page:"صفحة", empty:"استورد الصور أولًا من مكتبة الصور.", nothing:"حدد صورة واحدة على الأقل.", generated:"تم تجهيز {n} صفحة. التنزيل لن يغيّر الصور الأصلية.", local:"معالجة محلية", noTitle:"بدون عنوان", sizeNote:"يتم إنشاء كل صفحة على حدة إذا تجاوزت الصور عدد الخانات.", error:"تعذر إنشاء الورقة. تحقق من عدد الصور والمقاسات." },
- en: { kicker:"04 / PHOTO STUDIO", title:"Build your photo sheet, your way.", subtitle:"Contact sheets, portrait layouts, and optional labels — processed locally in your browser.", select:"Library images", all:"Select all", clear:"Clear selection", preset:"Paper size", custom:"Custom", width:"Width (mm)", height:"Height (mm)", portrait:"Portrait photos", sheet:"Contact sheet", cols:"Columns", rows:"Rows", gap:"Gap (mm)", margin:"Margin (mm)", dpi:"Resolution", labels:"Show image names", numbers:"Add numbers", titleLabel:"Sheet title", titlePlaceholder:"Beautiful memories", generate:"Generate sheet preview", render:"Rendering pages…", download:"Download all pages", page:"Page", empty:"Import images in the image library first.", nothing:"Select at least one image.", generated:"Prepared {n} pages. Downloading will not change your originals.", local:"Local processing", noTitle:"Untitled", sizeNote:"A separate page is created when the selection exceeds the available slots.", error:"Could not create the sheet. Check the image count and dimensions." }
+ ar: { kicker:"04 / استوديو الصور", title:"اصنع ورقة صورك بطريقتك.", subtitle:"أوراق Contact Sheet، صور شخصية، وتسميات اختيارية — كل شيء محلي داخل المتصفح.", select:"صور المكتبة", all:"تحديد الكل", clear:"إلغاء التحديد", preset:"مقاس الورقة", custom:"مخصص", width:"العرض (مم)", height:"الارتفاع (مم)", portrait:"صور شخصية", sheet:"Contact Sheet", cols:"الأعمدة", rows:"الصفوف", gap:"المسافة (مم)", margin:"الهامش (مم)", dpi:"الدقة", labels:"إظهار أسماء الصور", numbers:"إضافة أرقام", titleLabel:"عنوان الورقة", titlePlaceholder:"ذكريات جميلة", generate:"إنشاء معاينة الورقة", render:"جارٍ إنشاء الصفحات…", download:"تنزيل كل الصفحات", page:"صفحة", empty:"استورد الصور أولًا من مكتبة الصور.", nothing:"حدد صورة واحدة على الأقل.", generated:"تم تجهيز {n} صفحة. التنزيل لن يغيّر الصور الأصلية.", local:"معالجة محلية", noTitle:"بدون عنوان", sizeNote:"يتم إنشاء كل صفحة على حدة إذا تجاوزت الصور عدد الخانات.", fitMode:"طريقة ملاءمة الصورة", contain:"احتواء الصورة كاملة", cover:"ملء الخانة مع القص", error:"تعذر إنشاء الورقة. تحقق من عدد الصور والمقاسات." },
+ en: { kicker:"04 / PHOTO STUDIO", title:"Build your photo sheet, your way.", subtitle:"Contact sheets, portrait layouts, and optional labels — processed locally in your browser.", select:"Library images", all:"Select all", clear:"Clear selection", preset:"Paper size", custom:"Custom", width:"Width (mm)", height:"Height (mm)", portrait:"Portrait photos", sheet:"Contact sheet", cols:"Columns", rows:"Rows", gap:"Gap (mm)", margin:"Margin (mm)", dpi:"Resolution", labels:"Show image names", numbers:"Add numbers", titleLabel:"Sheet title", titlePlaceholder:"Beautiful memories", generate:"Generate sheet preview", render:"Rendering pages…", download:"Download all pages", page:"Page", empty:"Import images in the image library first.", nothing:"Select at least one image.", generated:"Prepared {n} pages. Downloading will not change your originals.", local:"Local processing", noTitle:"Untitled", sizeNote:"A separate page is created when the selection exceeds the available slots.", fitMode:"Image fitting", contain:"Fit entire image", cover:"Fill cell and crop", error:"Could not create the sheet. Check the image count and dimensions." }
 } as const;
 
 export default function PhotoStudio({ images, locale }: { images: PhotoStudioImage[]; locale: Locale }) {
@@ -65,36 +65,40 @@ export default function PhotoStudio({ images, locale }: { images: PhotoStudioIma
      context.save();context.beginPath();context.rect(x,y,cellW,boxH);context.clip();context.drawImage(bitmap,x+(cellW-drawW)/2,y+(boxH-drawH)/2,drawW,drawH);context.restore();bitmap.close();
      if(labels||numbers){context.fillStyle="#252238";context.font=`${Math.max(10,Math.round(3.1*scale))}px sans-serif`;context.textAlign="center";const text=[numbers?String(pageIndex*perPage+slot+1):"",labels?image.name:""].filter(Boolean).join(" · ");context.fillText(text,x+cellW/2,y+cellH-Math.max(4,2*scale),Math.max(1,cellW-4));}
     }
-    const pageBlob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("encode-failed")),"image/png"));
-    rendered.push({blob:pageBlob,filename:`contact-sheet-${String(pageIndex+1).padStart(2,"0")}.png`,width,height});
-    await new Promise<void>(resolve=>window.setTimeout(resolve,0));
+    const pageBlob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("تعذر إنشاء الصورة")), "image/png"));
+    rendered.push({blob:pageBlob,filename:`photo-sheet-${pageIndex+1}.png`,width,height});
+    canvas.width=1;canvas.height=1;
    }
    setPages(rendered);setPreviewIndex(0);
-  }catch{setError(t.error);}finally{setBusy(false);}
+  }catch(error){setError(error instanceof Error?error.message:t.error);}
+  finally{setBusy(false);}
  }
- return <section className="feature-studio" id="photo-studio" aria-labelledby="photo-studio-title">
-  <div className="feature-heading"><div><div className="section-kicker">{t.kicker}</div><h2 id="photo-studio-title">{t.title}</h2><p>{t.subtitle}</p></div><span className="feature-local-badge">◇ {t.local}</span></div>
-  <div className="feature-layout">
-   <aside className="feature-panel"><div className="feature-panel-heading"><h3>{t.select}</h3><button type="button" className="feature-text-button" onClick={selectAll}>{selected.length===images.length&&images.length?t.clear:t.all}</button></div>
-    {!images.length?<p className="feature-empty">{t.empty}</p>:<div className="feature-image-picker">{images.map(image=><button type="button" key={image.id} className={selected.includes(image.id)?"feature-image-choice is-selected":"feature-image-choice"} aria-pressed={selected.includes(image.id)} onClick={()=>toggle(image.id)}><img src={image.url} alt="" loading="lazy"/><span>{image.name}</span><i>{selected.includes(image.id)?"✓":"＋"}</i></button>)}</div>}
-   </aside>
-   <div className="feature-main"><div className="feature-controls">
+ async function downloadPages(){
+  for(const page of pages)downloadBlob(page.blob,page.filename);
+ }
+ return <section className="feature-studio">
+  <header className="feature-heading"><div><p className="eyebrow">{t.kicker}</p><h2>{t.title}</h2><p>{t.subtitle}</p></div><span className="status-pill">{t.local}</span></header>
+  <div className="photo-studio-grid">
+   <aside className="feature-panel">
+    <label className="feature-field"><span>{t.select}</span><div className="photo-select-list">{images.map(image=><label key={image.id} className="photo-select-item"><input type="checkbox" checked={selected.includes(image.id)} onChange={()=>toggle(image.id)}/><span>{image.name}</span></label>)}</div></label>
+    <div className="feature-actions"><button type="button" className="secondary-button" onClick={selectAll}>{selected.length===images.length?t.clear:t.all}</button></div>
     <label className="feature-field"><span>{t.preset}</span><select value={preset} onChange={e=>{setPreset(e.target.value as PaperPreset);setPages([]);}}><option value="4x6">4 × 6 in</option><option value="5x7">5 × 7 in</option><option value="A4">A4</option><option value="custom">{t.custom}</option></select></label>
-    {preset==="custom"&&<><label className="feature-field"><span>{t.width}</span><input type="number" min="20" max="500" value={customWidth} onChange={e=>{setCustomWidth(Math.min(500,Math.max(20,Number(e.target.value)||20)));setPages([]);}}/></label><label className="feature-field"><span>{t.height}</span><input type="number" min="20" max="500" value={customHeight} onChange={e=>{setCustomHeight(Math.min(500,Math.max(20,Number(e.target.value)||20)));setPages([]);}}/></label></>}
-    <label className="feature-field"><span>{t.cols}</span><input type="number" min="1" max="10" value={columns} onChange={e=>{setColumns(Math.min(10,Math.max(1,Number(e.target.value)||1)));setPages([]);}}/></label>
-    <label className="feature-field"><span>{t.rows}</span><input type="number" min="1" max="20" value={rows} onChange={e=>{setRows(Math.min(20,Math.max(1,Number(e.target.value)||1)));setPages([]);}}/></label>
-    <label className="feature-field"><span>{t.gap}</span><input type="number" min="0" max="30" value={gap} onChange={e=>{setGap(Math.min(30,Math.max(0,Number(e.target.value)||0)));setPages([]);}}/></label>
-    <label className="feature-field"><span>{t.margin}</span><input type="number" min="0" max="40" value={margin} onChange={e=>{setMargin(Math.min(40,Math.max(0,Number(e.target.value)||0)));setPages([]);}}/></label>
+    {preset==="custom"&&<div className="feature-inline-fields"><label className="feature-field"><span>{t.width}</span><input type="number" min="10" max="1000" value={customWidth} onChange={e=>setCustomWidth(Number(e.target.value))}/></label><label className="feature-field"><span>{t.height}</span><input type="number" min="10" max="1000" value={customHeight} onChange={e=>setCustomHeight(Number(e.target.value))}/></label></div>}
+    <label className="feature-field"><span>{t.portrait}</span><select value={String(columns)+":"+String(rows)} onChange={e=>{const [c,r]=e.target.value.split(":").map(Number);setColumns(c);setRows(r);setPages([]);}}><option value="1:1">1 × 1</option><option value="2:3">2 × 3</option><option value="3:2">3 × 2</option><option value="2:2">2 × 2</option><option value="3:3">3 × 3</option></select></label>
+    <div className="feature-inline-fields"><label className="feature-field"><span>{t.cols}</span><input type="number" min="1" max="10" value={columns} onChange={e=>{setColumns(Number(e.target.value));setPages([]);}}/></label><label className="feature-field"><span>{t.rows}</span><input type="number" min="1" max="20" value={rows} onChange={e=>{setRows(Number(e.target.value));setPages([]);}}/></label></div>
+    <div className="feature-inline-fields"><label className="feature-field"><span>{t.gap}</span><input type="number" min="0" max="30" value={gap} onChange={e=>{setGap(Number(e.target.value));setPages([]);}}/></label><label className="feature-field"><span>{t.margin}</span><input type="number" min="0" max="50" value={margin} onChange={e=>{setMargin(Number(e.target.value));setPages([]);}}/></label></div>
+    <label className="feature-field"><span>{t.dpi}</span><select value={dpi} onChange={e=>{setDpi(Number(e.target.value));setPages([]);}}><option value="72">72 DPI</option><option value="150">150 DPI</option><option value="300">300 DPI</option></select></label>
     <label className="feature-field"><span>{t.fitMode}</span><select value={fitMode} onChange={e=>{setFitMode(e.target.value as "contain"|"cover");setPages([]);}}><option value="contain">{t.contain}</option><option value="cover">{t.cover}</option></select></label>
-    <label className="feature-field"><span>{t.dpi}</span><select value={dpi} onChange={e=>{setDpi(Number(e.target.value));setPages([]);}}><option value={72}>72 DPI</option><option value={150}>150 DPI</option><option value={300}>300 DPI</option></select></label>
-    <label className="feature-field feature-field-wide"><span>{t.titleLabel}</span><input value={title} maxLength={80} placeholder={t.titlePlaceholder} onChange={e=>{setTitle(e.target.value);setPages([]);}}/></label>
-    <label className="feature-check"><input type="checkbox" checked={labels} onChange={e=>{setLabels(e.target.checked);setPages([]);}}/>{t.labels}</label>
-    <label className="feature-check"><input type="checkbox" checked={numbers} onChange={e=>{setNumbers(e.target.checked);setPages([]);}}/>{t.numbers}</label>
+    <label className="feature-field"><span>{t.titleLabel}</span><input value={title} placeholder={t.titlePlaceholder} onChange={e=>{setTitle(e.target.value);setPages([]);}}/></label>
+    <label className="feature-check"><input type="checkbox" checked={labels} onChange={e=>{setLabels(e.target.checked);setPages([]);}}/><span>{t.labels}</span></label>
+    <label className="feature-check"><input type="checkbox" checked={numbers} onChange={e=>{setNumbers(e.target.checked);setPages([]);}}/><span>{t.numbers}</span></label>
+    <p className="feature-note">{t.sizeNote}</p>
+    <button type="button" className="primary-button" disabled={busy||!images.length} onClick={()=>void renderSheets()}>{busy?t.render:t.generate}</button>
+    {error&&<p className="error-message" role="alert">{error}</p>}
+   </aside>
+   <div className="feature-panel photo-preview-panel"><div className="feature-panel-heading"><h3>{t.generate}</h3>{pages.length>0&&<button type="button" className="primary-button" onClick={downloadPages}>{t.download}</button>}</div>
+    {previewUrl?<><img className="photo-page-preview" src={previewUrl} alt={`${t.page} ${previewIndex+1}`}/><div className="feature-actions"><button type="button" className="secondary-button" disabled={previewIndex===0} onClick={()=>setPreviewIndex(index=>index-1)}>←</button><span>{t.page} {previewIndex+1} / {pages.length}</span><button type="button" className="secondary-button" disabled={previewIndex===pages.length-1} onClick={()=>setPreviewIndex(index=>index+1)}>→</button></div></>:<p className="feature-empty">{t.empty}</p>}
    </div>
-   <div className="feature-actions"><button type="button" className="button button-primary" disabled={busy||!selected.length} onClick={()=>void renderSheets()}>{busy?t.render:t.generate}</button>{pages.length>0&&<button type="button" className="button button-quiet" onClick={()=>pages.forEach((page,index)=>window.setTimeout(()=>downloadBlob(page.blob,page.filename),index*180))}>{t.download}</button>}</div>
-   {error&&<p className="feature-error" role="alert">{error}</p>}
-   {pages.length>0&&<><p className="feature-success" role="status">{t.generated.replace("{n}",String(pages.length))}</p><div className="feature-preview"><div className="feature-preview-bar"><span>{t.page} {previewIndex+1} / {pages.length}</span><div><button type="button" disabled={previewIndex===0} onClick={()=>setPreviewIndex(value=>value-1)}>←</button><button type="button" disabled={previewIndex===pages.length-1} onClick={()=>setPreviewIndex(value=>value+1)}>→</button></div></div><img src={previewUrl} alt={`Contact sheet page ${previewIndex+1}`}/></div></>}
-   <p className="feature-note">{t.sizeNote}</p>
-  </div></div>
+  </div>
  </section>;
 }
