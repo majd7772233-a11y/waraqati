@@ -50,11 +50,33 @@ async function withStore<T>(storeName: string, mode: IDBTransactionMode, action:
   return new Promise<T>((resolve, reject) => {
     const transaction = db.transaction(storeName, mode);
     const request = action(transaction.objectStore(storeName));
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Local storage request failed."));
-    transaction.oncomplete = () => db.close();
-    transaction.onerror = () => reject(transaction.error ?? new Error("Local storage transaction failed."));
-    transaction.onabort = () => reject(transaction.error ?? new Error("Local storage transaction aborted."));
+    let result: T;
+    let requestSucceeded = false;
+    let settled = false;
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      db.close();
+      reject(error);
+    };
+    request.onsuccess = () => {
+      result = request.result;
+      requestSucceeded = true;
+    };
+    request.onerror = () => fail(request.error ?? new Error("Local storage request failed."));
+    transaction.oncomplete = () => {
+      db.close();
+      if (settled) return;
+      if (!requestSucceeded) {
+        settled = true;
+        reject(new Error("Local storage transaction completed without a result."));
+        return;
+      }
+      settled = true;
+      resolve(result);
+    };
+    transaction.onerror = () => fail(transaction.error ?? new Error("Local storage transaction failed."));
+    transaction.onabort = () => fail(transaction.error ?? new Error("Local storage transaction aborted."));
   });
 }
 
