@@ -177,13 +177,13 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  async function saveProject(){
   const data=projectData();
   try{
-   window.localStorage.setItem("waraqati-draft-project",JSON.stringify(data));
    const existing=localProjects.find(project=>project.name===projectName);
    await saveLocalProject({id:existing?.id??makeLocalId("project"),name:projectName.trim()||"Untitled project",updatedAt:data.updatedAt,data});
+   try{window.localStorage.setItem("waraqati-draft-project",JSON.stringify(data));}catch{/* IndexedDB remains the primary persistent project store. */}
    await refreshWorkspace();
    setSavedAt(new Date().toLocaleTimeString(locale==="ar"?"ar":"en",{hour:"2-digit",minute:"2-digit"}));
    setWorkspaceMessage(locale==="ar"?"حُفظ المشروع على هذا الجهاز.":"Project saved on this device.");
-  }catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");setWorkspaceMessage(locale==="ar"?"تعذر الحفظ؛ تحقق من مساحة المتصفح.":"Save failed; check browser storage space.");}
+  }catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");setWorkspaceMessage(locale==="ar"?"تعذر الحفظ؛ تحقق من دعم التخزين المحلي ومساحة المتصفح.":"Save failed; check browser storage support and available space.");}
  }
  function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=(projectName.trim()||"waraqati-project").replace(/[\\/:*?"<>|]+/g,"-")+".json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
  function openLocalProject(id:string){
