@@ -6,6 +6,14 @@ self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.add(APP_ROOT);
+    const shell = await cache.match(APP_ROOT);
+    if (shell) {
+      const html = await shell.text();
+      const assetPaths = [...html.matchAll(/(?:src|href)="([^"]+\\.(?:js|css|webmanifest)(?:\\?[^"]*)?)"/g)].map(match => new URL(match[1], APP_ROOT).toString());
+      await Promise.all(assetPaths.map(async asset => {
+        try { await cache.add(asset); } catch { /* One optional asset must not prevent installation. */ }
+      }));
+    }
     await self.skipWaiting();
   })());
 });
