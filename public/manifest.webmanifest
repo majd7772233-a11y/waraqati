@@ -1,0 +1,14 @@
+{
+  "id": "./",
+  "name": "ورقتي | Waraqati Studio",
+  "short_name": "ورقتي",
+  "description": "استوديو محلي لترتيب الصور وتجهيزها للطباعة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10101b",
+  "theme_color": "#10101b",
+  "categories": ["photo", "productivity", "utilities"]
+}
