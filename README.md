@@ -63,7 +63,7 @@ npm test
 npm run build
 ```
 
-جهّزت GitHub Actions كملفات قابلة للتشغيل اليدوي من تبويب Actions عبر `workflow_dispatch`. لم تعد تُشغّل تلقائيًا مع push أو Pull Request؛ تُشغّل الفحوصات بعد انتهاء المرحلة العاشرة حسب خطة التطوير.
+جميع GitHub Actions تعمل يدويًا فقط عبر `workflow_dispatch`، دون مشغلات `push` أو `pull_request`. أكد المستخدم نجاح الاختبارات؛ يتبقى إعداد مشروع Cloudflare Pages ثم تشغيل Workflow النشر والتحقق من الموقع المنشور.
 
 ## بنية المشروع الحالية
 
