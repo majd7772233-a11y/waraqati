@@ -539,3 +539,68 @@ h1 { position: relative; max-width: 680px; font-size: clamp(44px,5.3vw,76px); li
 @media(max-width:850px) { .feature-layout { grid-template-columns:1fr; } .feature-image-picker { grid-template-columns:repeat(2,minmax(0,1fr)); max-height:360px; } .feature-image-choice { grid-template-columns:40px minmax(0,1fr) 22px; gap:7px; } .feature-image-choice img { width:40px; height:40px; } }
 @media(max-width:560px) { .feature-studio { padding:14px; border-radius:18px; } .feature-heading { display:grid; } .feature-local-badge { justify-self:start; } .feature-controls { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .feature-field-wide { grid-column:span 2; } .feature-image-picker { grid-template-columns:1fr; } .feature-actions { display:grid; grid-template-columns:1fr; } .feature-actions button { width:100%; } .batch-output-card { align-items:flex-start; } }
 @media(prefers-reduced-motion:reduce) { .feature-studio * { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }
+
+
+/* Local projects, saved templates, and offline workspace */
+.editor-workspace-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line, rgba(255,255,255,.12));
+  border-radius: 18px;
+  background: rgba(15, 17, 31, .56);
+}
+.editor-workspace-actions > button,
+.workspace-select-label select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--line, rgba(255,255,255,.14));
+  border-radius: 12px;
+  padding: .55rem .7rem;
+  color: inherit;
+  background: rgba(255,255,255,.055);
+  font: inherit;
+}
+.editor-workspace-actions > button {
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.editor-workspace-actions > button:hover {
+  background: rgba(151, 121, 255, .16);
+  border-color: rgba(151, 121, 255, .48);
+}
+.editor-workspace-actions > button:focus-visible,
+.workspace-select-label select:focus-visible {
+  outline: 2px solid #b8a5ff;
+  outline-offset: 3px;
+}
+.workspace-select-label {
+  display: grid;
+  min-width: 0;
+  gap: .35rem;
+  color: var(--muted, #b5b4c9);
+  font-size: .78rem;
+}
+.workspace-select-label select {
+  color: var(--text, #f4f1ff);
+}
+.workspace-select-label option {
+  color: #171525;
+  background: #fff;
+}
+.workspace-message {
+  margin: .65rem .2rem 0;
+  color: var(--muted, #b5b4c9);
+  font-size: .82rem;
+  line-height: 1.6;
+}
+@media (max-width: 560px) {
+  .editor-workspace-actions { grid-template-columns: minmax(0, 1fr); padding: .7rem; }
+  .editor-workspace-actions > button { min-height: 46px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-workspace-actions > button { transition: none; }
+}
