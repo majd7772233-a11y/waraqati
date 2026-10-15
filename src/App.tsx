@@ -62,6 +62,7 @@ export default function App() {
  },[images,libraryHydrated,locale]);
 
  async function importFiles(incoming:FileList|File[],zipMode=false){
+  if(!libraryHydrated){setError(locale==="ar"?"انتظر حتى تنتهي استعادة المكتبة المحلية.":"Wait for the local library to finish restoring.");return;}
   if(busy||!incoming.length)return;
   setBusy(true);setError("");setSummary(null);
   let candidates:File[]=[],unsupported=0,damaged=0;
