@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { exportLayoutPageAsImage, exportLayoutToPdf, type ExportDpi, type ExportFormat, type ExportBackground } from "./exporter";
+import { listLocalProjects, listUserTemplates, makeLocalId, saveLocalProject, saveUserTemplate, type LocalProject, type UserTemplate } from "./localWorkspace";
 import {
   calculateLayout,
   getPaperDimensions,
@@ -79,6 +80,12 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   const dragRef=useRef<{pointerId:number;startX:number;startY:number;panX:number;panY:number}|null>(null);
   const [projectName,setProjectName]=useState(locale==="ar"?"مشروعي الأول":"My first project");
   const [savedAt,setSavedAt]=useState("");
+  const [localProjects,setLocalProjects]=useState<LocalProject[]>([]);
+  const [userTemplates,setUserTemplates]=useState<UserTemplate[]>([]);
+  const [projectToOpen,setProjectToOpen]=useState("");
+  const [templateToOpen,setTemplateToOpen]=useState("");
+  const projectImportRef=useRef<HTMLInputElement>(null);
+  const [workspaceMessage,setWorkspaceMessage]=useState("");
   const [exportDpi,setExportDpi]=useState<ExportDpi>(150);
   const [exportQuality,setExportQuality]=useState(0.92);
   const [exportBackground,setExportBackground]=useState<ExportBackground>("white");
@@ -94,6 +101,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
 
 
  const selectedImages=useMemo(()=>chosen.map(id=>images.find(image=>image.id===id)).filter((image):image is StudioImage=>Boolean(image)),[chosen,images]);
+ useEffect(()=>{void Promise.all([listLocalProjects(),listUserTemplates()]).then(([projects,templates])=>{setLocalProjects(projects);setUserTemplates(templates);}).catch(()=>setWorkspaceMessage(locale==="ar"?"التخزين المحلي غير متاح في هذا المتصفح.":"Local storage is unavailable in this browser."));},[locale]);
  useEffect(()=>{setChosen(current=>{const next=current.filter(id=>images.some(image=>image.id===id));return next.length===current.length?current:next;});},[images]);
  const gridRows=mode==="two-vertical"?2:mode==="three-vertical"?3:mode==="single"?1:mode==="two-horizontal"?1:mode==="three-horizontal"?1:rows;
  const gridColumns=mode==="two-horizontal"?2:mode==="three-horizontal"?3:mode==="single"?1:mode==="two-vertical"?1:mode==="three-vertical"?1:columns;
@@ -165,8 +173,43 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
  }
  function travelHistory(nextIndex:number){const raw=historyRef.current[nextIndex];if(!raw)return;setHistoryIndex(nextIndex);applySnapshot(raw);}
  function projectData(){return {format:"waraqati-project",version:1,name:projectName,updatedAt:new Date().toISOString(),editor:JSON.parse(historyKey)};}
- function saveProject(){try{window.localStorage.setItem("waraqati-draft-project",JSON.stringify(projectData()));setSavedAt(new Date().toLocaleTimeString(locale==="ar"?"ar":"en",{hour:"2-digit",minute:"2-digit"}));}catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");}}
- function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="waraqati-project.json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ async function refreshWorkspace(){const [projects,templates]=await Promise.all([listLocalProjects(),listUserTemplates()]);setLocalProjects(projects);setUserTemplates(templates);}
+ async function saveProject(){
+  const data=projectData();
+  try{
+   window.localStorage.setItem("waraqati-draft-project",JSON.stringify(data));
+   const existing=localProjects.find(project=>project.name===projectName);
+   await saveLocalProject({id:existing?.id??makeLocalId("project"),name:projectName.trim()||"Untitled project",updatedAt:data.updatedAt,data});
+   await refreshWorkspace();
+   setSavedAt(new Date().toLocaleTimeString(locale==="ar"?"ar":"en",{hour:"2-digit",minute:"2-digit"}));
+   setWorkspaceMessage(locale==="ar"?"حُفظ المشروع على هذا الجهاز.":"Project saved on this device.");
+  }catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");setWorkspaceMessage(locale==="ar"?"تعذر الحفظ؛ تحقق من مساحة المتصفح.":"Save failed; check browser storage space.");}
+ }
+ function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=(projectName.trim()||"waraqati-project").replace(/[\\/:*?"<>|]+/g,"-")+".json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ function openLocalProject(id:string){
+  const project=localProjects.find(item=>item.id===id);if(!project||!project.data||typeof project.data!=="object")return;
+  const data=project.data as {format?:string;version?:number;name?:string;editor?:Record<string,unknown>};
+  if(data.format!=="waraqati-project"||!data.editor){setWorkspaceMessage(locale==="ar"?"ملف المشروع غير صالح.":"Invalid project file.");return;}
+  applySnapshot(JSON.stringify(data.editor));setProjectName(data.name||project.name);setWorkspaceMessage(locale==="ar"?"فُتح المشروع. ستبقى الصور المفقودة بحاجة إلى إعادة استيراد.":"Project opened. Missing images must be re-imported.");
+ }
+ async function importProjectFile(file?:File){
+  if(!file)return;
+  try{
+   const data=JSON.parse(await file.text()) as {format?:string;version?:number;name?:string;editor?:Record<string,unknown>};
+   if(data.format!=="waraqati-project"||data.version!==1||!data.editor||typeof data.editor!=="object"||!Array.isArray(data.editor.chosen))throw new Error("invalid-project");
+   const name=(data.name||file.name.replace(/\\.json$/i,"")).slice(0,80);
+   applySnapshot(JSON.stringify(data.editor));setProjectName(name);
+   const normalized={format:"waraqati-project",version:1,name,updatedAt:new Date().toISOString(),editor:data.editor};
+   await saveLocalProject({id:makeLocalId("project"),name,updatedAt:normalized.updatedAt,data:normalized});
+   await refreshWorkspace();setWorkspaceMessage(locale==="ar"?"تم استيراد المشروع وحفظه محليًا.":"Project imported and saved locally.");
+  }catch{setWorkspaceMessage(locale==="ar"?"تعذر استيراد الملف: صيغة المشروع غير صالحة أو غير مدعومة.":"Could not import this file: invalid or unsupported project format.");}
+  finally{if(projectImportRef.current)projectImportRef.current.value="";}
+ }
+ async function saveTemplate(){
+  try{const name=(projectName.trim()|| (locale==="ar"?"قالب جديد":"New template")).slice(0,80);await saveUserTemplate({id:makeLocalId("template"),name,updatedAt:new Date().toISOString(),editor:JSON.parse(historyKey)});await refreshWorkspace();setWorkspaceMessage(locale==="ar"?"حُفظ القالب محليًا.":"Template saved locally.");}
+  catch{setWorkspaceMessage(locale==="ar"?"تعذر حفظ القالب.":"Could not save template.");}
+ }
+ function openUserTemplate(id:string){const template=userTemplates.find(item=>item.id===id);if(!template)return;applySnapshot(JSON.stringify(template.editor));setProjectName(template.name);setWorkspaceMessage(locale==="ar"?"طُبق القالب.":"Template applied.");}
  async function startExport(format:"pdf"|ExportFormat){
   if(!layout||exportBusy)return;
   setExportBusy(true);setExportError("");setExportProgress({completed:0,total:format==="pdf"?layout.pages.length:1,label:"render"});
@@ -187,6 +230,14 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
     <label className="editor-project-name"><span aria-hidden="true">✦</span><input value={projectName} maxLength={80} onChange={e=>setProjectName(e.target.value)} aria-label={locale==="ar"?"اسم المشروع":"Project name"}/></label>
     <div className="editor-toolbar-actions"><button type="button" onClick={()=>travelHistory(Math.max(0,historyIndex-1))} disabled={historyIndex<=0} title="Ctrl+Z" aria-label={locale==="ar"?"تراجع":"Undo"}>↶</button><button type="button" onClick={()=>travelHistory(Math.min(historyRef.current.length-1,historyIndex+1))} disabled={historyIndex>=historyRef.current.length-1} title="Ctrl+Y" aria-label={locale==="ar"?"إعادة":"Redo"}>↷</button><span className="editor-toolbar-divider"/><button type="button" onClick={()=>setZoom(v=>Math.max(40,v-10))} disabled={zoom<=40} aria-label={locale==="ar"?"تصغير":"Zoom out"}>−</button><output className="editor-zoom-value">{zoom}%</output><button type="button" onClick={()=>setZoom(v=>Math.min(160,v+10))} disabled={zoom>=160} aria-label={locale==="ar"?"تكبير":"Zoom in"}>＋</button><button type="button" onClick={()=>{setZoom(100);setPan({x:0,y:0});}} aria-label={locale==="ar"?"إعادة التكبير":"Reset zoom"}>⌖</button><span className="editor-toolbar-divider"/><button type="button" className="editor-save-button" onClick={saveProject}>▣ <span>{locale==="ar"?"حفظ":"Save"}</span></button><button type="button" className="editor-export-button" onClick={exportProject}>↗ <span>{locale==="ar"?"تصدير المشروع":"Export project"}</span></button></div>
     <div className="editor-save-status" role="status">{savedAt?(locale==="ar"?"حُفظ ":"Saved ")+savedAt:(locale==="ar"?"حفظ محلي":"Local draft")}</div>
+    <div className="editor-workspace-actions">
+     <label className="workspace-select-label"><span>{locale==="ar"?"المشاريع الأخيرة":"Recent projects"}</span><select value={projectToOpen} onChange={event=>{setProjectToOpen(event.target.value);if(event.target.value)openLocalProject(event.target.value);}} aria-label={locale==="ar"?"فتح مشروع محفوظ":"Open saved project"}><option value="">{locale==="ar"?"فتح مشروع محفوظ…":"Open saved project…"}</option>{localProjects.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+     <label className="workspace-select-label"><span>{locale==="ar"?"قوالبك":"Your templates"}</span><select value={templateToOpen} onChange={event=>{setTemplateToOpen(event.target.value);if(event.target.value)openUserTemplate(event.target.value);}} aria-label={locale==="ar"?"تطبيق قالب محفوظ":"Apply saved template"}><option value="">{locale==="ar"?"تطبيق قالب…":"Apply template…"}</option>{userTemplates.map(template=><option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+     <button type="button" onClick={saveTemplate}>＋ {locale==="ar"?"حفظ كقالب":"Save as template"}</button>
+     <button type="button" onClick={()=>projectImportRef.current?.click()}>↥ {locale==="ar"?"استيراد JSON":"Import JSON"}</button>
+     <input ref={projectImportRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={event=>void importProjectFile(event.currentTarget.files?.[0])} aria-label={locale==="ar"?"استيراد ملف مشروع":"Import project file"}/>
+    </div>
+    {workspaceMessage&&<p className="workspace-message" role="status">{workspaceMessage}</p>}
    </div>
    <div className="editor-mobile-tabs" role="group" aria-label={locale==="ar"?"لوحات الاستوديو":"Studio panels"}><button type="button" aria-pressed={mobilePanel==="assets"} onClick={()=>setMobilePanel(p=>p==="assets"?"none":"assets")}>{locale==="ar"?"الصور":"Assets"} · {selectedImages.length}</button><button type="button" aria-pressed={mobilePanel==="settings"} onClick={()=>setMobilePanel(p=>p==="settings"?"none":"settings")}>{locale==="ar"?"الخصائص":"Properties"}</button><button type="button" aria-pressed={mobilePanel==="none"} onClick={()=>setMobilePanel("none")}>{locale==="ar"?"مساحة العمل":"Workspace"}</button></div>
   <div className="studio-workspace" data-mobile-panel={mobilePanel}>
