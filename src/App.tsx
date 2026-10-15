@@ -15,6 +15,7 @@ export default function App() {
  const [locale,setLocale]=useState<Locale>(()=>window.localStorage.getItem("waraqati-locale")==="en"?"en":"ar");
  const [images,setImages]=useState<LibraryImage[]>([]);
  const [libraryHydrated,setLibraryHydrated]=useState(false);
+ const [libraryStorageReady,setLibraryStorageReady]=useState(false);
  const [selected,setSelected]=useState<string[]>([]);
  const [sortMode,setSortMode]=useState<SortMode>("name");
  const [query,setQuery]=useState("");
@@ -47,15 +48,16 @@ export default function App() {
     }));
     if(cancelled){restored.forEach(image=>URL.revokeObjectURL(image.url));return;}
     setImages(restored);
+    setLibraryStorageReady(true);
     setLibraryHydrated(true);
    }catch{
-    if(!cancelled)setError("Local image storage is unavailable. The current session can still be used, but images may not persist.");
+    if(!cancelled){setError("Local image storage is unavailable. The current session can still be used, but images may not persist.");setLibraryHydrated(true);}
    }
   })();
   return()=>{cancelled=true;urls.current.forEach(URL.revokeObjectURL);};
  },[]);
  useEffect(()=>{
-  if(!libraryHydrated)return;
+  if(!libraryHydrated||!libraryStorageReady)return;
   void saveImageLibrary(images.map(image=>({id:image.id,name:image.file.name,type:image.file.type,size:image.file.size,lastModified:image.file.lastModified,blob:image.file}))).catch(()=>setError(locale==="ar"?"تعذر حفظ مكتبة الصور محليًا. قد تكون مساحة المتصفح ممتلئة.":"Could not persist the image library. Browser storage may be full."));
  },[images,libraryHydrated,locale]);
 
