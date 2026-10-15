@@ -185,7 +185,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
    setWorkspaceMessage(locale==="ar"?"حُفظ المشروع على هذا الجهاز.":"Project saved on this device.");
   }catch{setSavedAt(locale==="ar"?"تعذر الحفظ":"Save failed");setWorkspaceMessage(locale==="ar"?"تعذر الحفظ؛ تحقق من دعم التخزين المحلي ومساحة المتصفح.":"Save failed; check browser storage support and available space.");}
  }
- function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=(projectName.trim()||"waraqati-project").replace(/[\\/:*?"<>|]+/g,"-")+".json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ function exportProject(){const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="waraqati-project.json";a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
  function openLocalProject(id:string){
   const project=localProjects.find(item=>item.id===id);if(!project||!project.data||typeof project.data!=="object")return;
   const data=project.data as {format?:string;version?:number;name?:string;editor?:Record<string,unknown>};
@@ -197,7 +197,7 @@ export default function PaperLayoutStudio({ images, locale }: { images: StudioIm
   try{
    const data=JSON.parse(await file.text()) as {format?:string;version?:number;name?:string;editor?:Record<string,unknown>};
    if(data.format!=="waraqati-project"||data.version!==1||!data.editor||typeof data.editor!=="object"||!Array.isArray(data.editor.chosen))throw new Error("invalid-project");
-   const name=(data.name||file.name.replace(/\\.json$/i,"")).slice(0,80);
+   const name=(data.name||file.name.replace(/\.json$/i,"")).slice(0,80);
    applySnapshot(JSON.stringify(data.editor));setProjectName(name);
    const normalized={format:"waraqati-project",version:1,name,updatedAt:new Date().toISOString(),editor:data.editor};
    await saveLocalProject({id:makeLocalId("project"),name,updatedAt:normalized.updatedAt,data:normalized});
