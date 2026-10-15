@@ -4,6 +4,7 @@ import { isSupportedImage, readImageZip } from "./imageLibrary";
 import PaperLayoutStudio from "./PaperLayoutStudio";
 import PhotoStudio from "./PhotoStudio";
 import BatchLab from "./BatchLab";
+import { loadImageLibrary, saveImageLibrary } from "./localWorkspace";
 
 type SortMode = "name" | "size" | "date";
 interface LibraryImage { id: string; file: File; url: string; width: number; height: number }
@@ -13,6 +14,7 @@ const toolIcons = ["▦", "✳", "▧", "⌘"];
 export default function App() {
  const [locale,setLocale]=useState<Locale>(()=>window.localStorage.getItem("waraqati-locale")==="en"?"en":"ar");
  const [images,setImages]=useState<LibraryImage[]>([]);
+ const [libraryHydrated,setLibraryHydrated]=useState(false);
  const [selected,setSelected]=useState<string[]>([]);
  const [sortMode,setSortMode]=useState<SortMode>("name");
  const [query,setQuery]=useState("");
@@ -29,7 +31,27 @@ export default function App() {
  const batchImages=useMemo(()=>images.map(image=>({id:image.id,name:image.file.name,url:image.url,width:image.width,height:image.height,file:image.file})),[images]);
 
  useEffect(()=>{document.documentElement.lang=locale;document.documentElement.dir=direction;window.localStorage.setItem("waraqati-locale",locale);},[locale,direction]);
- useEffect(()=>{folderInput.current?.setAttribute("webkitdirectory","");return()=>urls.current.forEach(URL.revokeObjectURL);},[]);
+ useEffect(()=>{
+  folderInput.current?.setAttribute("webkitdirectory","");
+  let cancelled=false;
+  void loadImageLibrary().then(stored=>{
+   if(cancelled)return;
+   const restored:LibraryImage[]=stored.map(item=>{
+    const file=new File([item.blob],item.name,{type:item.type,lastModified:item.lastModified});
+    const url=URL.createObjectURL(file);urls.current.push(url);
+    return {id:item.id,file,url,width:0,height:0};
+   });
+   const pending=restored.map(async image=>{
+    try{const bitmap=await createImageBitmap(image.file);image.width=bitmap.width;image.height=bitmap.height;bitmap.close();}catch{/* Preserve the file so the user can remove or re-import it. */}
+   });
+   void Promise.all(pending).then(()=>{if(!cancelled)setImages(restored);else restored.forEach(image=>URL.revokeObjectURL(image.url));});
+  }).catch(()=>{/* A fresh workspace is still usable if IndexedDB is unavailable. */}).finally(()=>{if(!cancelled)setLibraryHydrated(true);});
+  return()=>{cancelled=true;urls.current.forEach(URL.revokeObjectURL);};
+ },[]);
+ useEffect(()=>{
+  if(!libraryHydrated)return;
+  void saveImageLibrary(images.map(image=>({id:image.id,name:image.file.name,type:image.file.type,size:image.file.size,lastModified:image.file.lastModified,blob:image.file}))).catch(()=>setError(locale==="ar"?"تعذر حفظ مكتبة الصور محليًا. قد تكون مساحة المتصفح ممتلئة.":"Could not persist the image library. Browser storage may be full."));
+ },[images,libraryHydrated,locale]);
 
  async function importFiles(incoming:FileList|File[],zipMode=false){
   if(busy||!incoming.length)return;
