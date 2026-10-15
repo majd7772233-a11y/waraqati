@@ -14,6 +14,10 @@ describe("image import safeguards", () => {
   });
 
   it("rejects malformed ZIP input instead of silently importing nothing", async () => {
-    await expect(readImageZip(new File(["not a zip"], "images.zip"))).rejects.toThrow("invalid-zip");
+    const file = new File(["not a zip"], "images.zip");
+    Object.defineProperty(file, "arrayBuffer", {
+      value: async () => new TextEncoder().encode("not a zip").buffer,
+    });
+    await expect(readImageZip(file)).rejects.toThrow("invalid-zip");
   });
 });
