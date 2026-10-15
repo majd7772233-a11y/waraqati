@@ -31,10 +31,5 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
-      - name: Verify built app shell and PWA assets
-        run: |
-          test -s dist/index.html
-          test -s dist/manifest.webmanifest
-          test -s dist/sw.js
-          test -s dist/icon.svg
-          grep -q 'manifest.webmanifest' dist/index.html
+      - name: Verify production artifact, PWA assets, and relative paths
+        run: node scripts/verify-dist.mjs
